@@ -1,0 +1,27 @@
+[project]
+name = "uc"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "sly==0.5",
+    "flake8==7.1.1",
+    "pytest==8.3.2",
+    "graphviz==0.20.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black==24.4.2",
+    "isort==5.13.2",
+]
+
+[project.scripts]
+uc-lexer = "uc.uc_lexer:main"
+uc-parser = "uc.uc_parser:main"
+uc-sema = "uc.uc_sema:main"
+uc-code = "uc.uc_code:main"
+ucc = "uc.uc_compiler:main"
+
+[tool.isort]
+profile = "black"
+line_length = 79
