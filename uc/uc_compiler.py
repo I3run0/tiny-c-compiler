@@ -271,9 +271,7 @@ class Compiler:
             f.close()
         return 0
 
-
-if __name__ == "__main__":
-
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("filename")
     parser.add_argument(
@@ -334,3 +332,6 @@ if __name__ == "__main__":
 
     retval = Compiler(args).compile()
     sys.exit(retval)
+
+if __name__ == "__main__":
+    main()
