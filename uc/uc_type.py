@@ -29,12 +29,43 @@ IntType = uCType(
     rel_ops={"==", "!=", "<", ">", "<=", ">="},
     assign_ops={"="},
 )
-# TODO: add other basic types
-# CharType = uCType("char", ...)
+
+CharType = uCType(
+    "char",
+    unary_ops={"-", "+"},
+    binary_ops={},
+    rel_ops={"==", "!=", "<", ">", "<=", ">="},
+    assign_ops={"="},
+)
+
+BoolType = uCType(
+    "bool",
+    unary_ops={"!"},
+    binary_ops={"&&", "||"},
+    rel_ops={"==", "!=", "<", ">", "<=", ">="},
+    assign_ops={"="},
+)
+
+VoidType = uCType(
+    "void",
+    unary_ops={},
+    binary_ops={},
+    rel_ops={},
+    assign_ops={},
+)
+
+StringType = uCType(
+    "string",
+    unary_ops={},
+    binary_ops={},
+    rel_ops={},
+    assign_ops={},
+)
+
+BasicVariableTypes = [IntType, CharType, BoolType, StringType]
 
 
-# TODO: add array and function types
-# Array and Function types need to be instantiated for each declaration
+# TODO: Check if ArrayType and FunctionType are correct
 class ArrayType(uCType):
     def __init__(self, element_type, size=None):
         """
@@ -44,4 +75,20 @@ class ArrayType(uCType):
         """
         self.type = element_type
         self.size = size
-        super().__init__(None, rel_ops={"==", "!="})
+        super().__init__(
+            f"Array<{element_type.typename}>", rel_ops={"==", "!="})
+
+    def __eq__(self, other):
+        if isinstance(other, ArrayType):
+            return self.type == other.type and self.size == other.size
+        return False
+
+
+class FunctionType(uCType):
+    def __init__(self, return_type, parameters_type, size=None):
+        self.return_type = return_type
+        self.parameters_type = parameters_type
+        return_type_str = return_type.typename
+        parameters_type_str = ", ".join([p.typename for p in parameters_type])
+        super().__init__(
+            f"{return_type_str} Function({parameters_type_str})")

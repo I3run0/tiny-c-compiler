@@ -1,5 +1,7 @@
+from abc import ABC
+from abc import abstractmethod
+
 import sys
-from abc import ABC, abstractmethod
 
 
 def represent_node(obj, indent):
@@ -30,7 +32,7 @@ def represent_node(obj, indent):
             for name, value in vars(obj).items():
 
                 # is an irrelevant attribute: skip it.
-                if name in ("bind", "coord"):
+                if name in ('bind', 'coord'):
                     continue
 
                 # relevant attribte not set: skip it.
@@ -99,8 +101,10 @@ class Node(ABC):
         """
         lead = " " * offset
         if nodenames and _my_node_name is not None:
-            buf.write(lead + self.__class__.__name__ + " <" + _my_node_name + ">: ")
-            inner_offset = len(self.__class__.__name__ + " <" + _my_node_name + ">: ")
+            buf.write(lead + self.__class__.__name__ +
+                      " <" + _my_node_name + ">: ")
+            inner_offset = len(self.__class__.__name__ +
+                               " <" + _my_node_name + ">: ")
         else:
             buf.write(lead + self.__class__.__name__ + ":")
             inner_offset = len(self.__class__.__name__ + ":")
@@ -108,12 +112,8 @@ class Node(ABC):
         if self.attr_names:
             if attrnames:
                 nvlist = [
-                    (
-                        n,
-                        represent_node(
-                            getattr(self, n), offset + inner_offset + 1 + len(n) + 1
-                        ),
-                    )
+                    (n, represent_node(getattr(self, n),
+                     offset+inner_offset+1+len(n)+1))
                     for n in self.attr_names
                     if getattr(self, n) is not None
                 ]
@@ -130,8 +130,9 @@ class Node(ABC):
                 buf.write(" %s" % self.coord)
         buf.write("\n")
 
-        for child_name, child in self.children():
-            child.show(buf, offset + 4, attrnames, nodenames, showcoord, child_name)
+        for (child_name, child) in self.children():
+            child.show(buf, offset + 4, attrnames,
+                       nodenames, showcoord, child_name)
 
 
 class DeclType(Node):
@@ -153,7 +154,8 @@ class DeclType(Node):
     """
 
     @abstractmethod
-    def __init__(self): ...
+    def __init__(self):
+        ...
 
     @property
     def identifier(self):
@@ -382,7 +384,7 @@ class Compound(Node):
 
 class Constant(Node):
 
-    attr_names = ("type", "value")
+    attr_names = ('type', 'value')
 
     def __init__(self, type, value, coord=None):
         """
@@ -673,7 +675,6 @@ class InitList(Node):
         """
         self.exprs = exprs
         self.coord = coord
-        self.value = None
 
     def children(self):
         nodelist = []

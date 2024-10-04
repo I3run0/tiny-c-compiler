@@ -10,13 +10,12 @@
 import argparse
 import sys
 from contextlib import contextmanager
-
-from uc.uc_code import CodeGenerator
-from uc.uc_interpreter import Interpreter
 from uc.uc_parser import UCParser
 from uc.uc_sema import Visitor
 
+# from uc.uc_code import CodeGenerator
 # from uc.uc_analysis import DataFlow
+# from uc.uc_interpreter import Interpreter
 # from uc.uc_llvm import LLVMCodeGenerator
 
 """
@@ -72,7 +71,7 @@ _num_errors = 0
 
 
 def error(lineno, message, filename=None):
-    """Report a compiler error to all subscribers"""
+    """ Report a compiler error to all subscribers """
     global _num_errors
     if not filename:
         if not lineno:
@@ -90,12 +89,12 @@ def error(lineno, message, filename=None):
 
 
 def errors_reported():
-    """Return number of errors reported."""
+    """ Return number of errors reported. """
     return _num_errors
 
 
 def clear_errors():
-    """Clear the total number of errors reported."""
+    """ Clear the total number of errors reported. """
     global _num_errors
     _num_errors = 0
 
@@ -150,12 +149,12 @@ class Compiler:
         except AssertionError as e:
             error(None, e)
 
-    def _codegen(self):
-        self.gen = CodeGenerator(self.args.cfg)
-        self.gen.visit(self.ast)
-        self.gencode = self.gen.code
-        if not self.args.yaml and self.ir_file is not None:
-            self.gen.show(buf=self.ir_file)
+    # def _codegen(self):
+    #     self.gen = CodeGenerator(self.args.cfg)
+    #     self.gen.visit(self.ast)
+    #     self.gencode = self.gen.code
+    #     if not self.args.yaml and self.ir_file is not None:
+    #         self.gen.show(buf=self.ir_file)
 
     # def _opt(self):
     #     self.opt = DataFlow(self.args.cfg, self.args.verbose)
@@ -176,19 +175,19 @@ class Compiler:
     #             self.llvm.execute_ir(self.args.llvm_opt, self.llvm_file)
 
     def _do_compile(self):
-        """Compiles the code to the given source file."""
+        """ Compiles the code to the given source file. """
         self._parse()
         if not errors_reported():
             self._sema()
-        if not errors_reported():
-            self._codegen()
+        # if not errors_reported():
+        #     self._codegen()
         #     if self.args.opt:
         #         self._opt()
         #     if self.args.llvm:
         #         self._llvm()
 
     def compile(self):
-        """Compiles the given  filename"""
+        """ Compiles the given  filename """
 
         if self.args.filename[-3:] == ".uc":
             filename = self.args.filename
@@ -263,9 +262,6 @@ class Compiler:
             #             vm.run(self.optcode)
             #         else:
             #             vm.run(self.gencode)
-            elif self.run and not self.args.cfg:
-                vm = Interpreter(self.args.idb)
-                vm.run(self.gencode)
 
         for f in open_files:
             f.close()

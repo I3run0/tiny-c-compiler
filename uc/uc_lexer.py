@@ -72,54 +72,114 @@ class UCLexer(Lexer):
     tokens = keywords + (
         # Identifiers
         "ID",
+        # constants
+        "INT_CONST",
+        "CHAR_CONST",
+        "STRING_LITERAL",
+        # Operators
+        "PLUS",
+        "MINUS",
+        "TIMES",
+        "DIVIDE",
+        "MOD",
+        "OR",
+        "AND",
+        "NOT",
+        "LT",
+        "LE",
+        "GT",
+        "GE",
+        "EQ",
+        "NE",
+        # Assignment
+        "EQUALS",
+        # Delimeters
+        "LPAREN",
+        "RPAREN",  # ( )
+        "LBRACKET",
+        "RBRACKET",  # [ ]
+        "LBRACE",
+        "RBRACE",  # { }
+        "COMMA",
+        "SEMI",  # , ;
         # Lexer errors
         "UNTERMINATED_COMMENT",
         "UNTERMINATED_STRING",
-        # Constants
-        "INT_CONST",
-        "STRING_LITERAL",
     )
 
     #
     # Rules
     #
     ignore = " \t"
-
+    
     # Newlines
-    @_(r"<Include a regex here for newline>")
+    @_(r'\n+')
     def ignore_newline(self, t):
         self.lineno += len(t.value)
 
     # Comments
-    @_(r"<Include a regex here for comments>")
+    @_(r'(//.*)|(/\*(.|\n)*?\*/)') # Essa regra esta errada
     def ignore_comment(self, t):
         self.lineno += t.value.count("\n")
 
-    @_(r"<Include a regex here for unterminated comments>")
+    @_(r'/\*(.|\n)*')
     def UNTERMINATED_COMMENT(self, t):
         msg = "Unterminated comment"
         self._error(msg, t)
 
     # Identifiers and keywords
-    @_(r"<Include a regex here for ID>")
+    @_(r"[a-zA-Z_][a-zA-Z0-9_]*")
     def ID(self, t):
         t.type = self.keyword_map.get(t.value, "ID")
         return t
 
     # String literals
-    @_(r"<Include a regex here for string literals>")
+    @_(r'".*?"')
     def STRING_LITERAL(self, t):
         t.value = t.value[1:-1]
         return t
 
-    @_(r"<Include a regex here for unterminated strings>")
+    @_(r'".*')
     def UNTERMINATED_STRING(self, t):
         msg = "Unterminated string"
         self._error(msg, t)
 
     # Continue the Lexer Rules
     # ...
+    
+    #Regular expression rules for tokens
+    #constants
+    INT_CONST = r'[0-9]+'
+    CHAR_CONST = r"'.?'"
+   
+    #Operators
+    PLUS = r'\+'
+    MINUS = r'-'
+    TIMES = r'\*'
+    DIVIDE = r'/'
+    MOD = r'%'
+    OR = r'\|\|'
+    AND = r'&&'
+    LE = r'<='
+    GE = r'>='
+    EQ = r'=='
+    NE = r'!='
+    NOT = r'!'
+    LT = r'<'
+    GT = r'>'
 
+    # Assignment
+    EQUALS = r'='
+
+    #Delimiters
+    LPAREN = r'\('
+    RPAREN = r'\)'
+    LBRACKET = r'\['
+    RBRACKET = r'\]'
+    LBRACE = r'\{'
+    RBRACE = r'\}'
+    COMMA = r','
+    SEMI = r';'
 
 def main():
     # create argument parser
