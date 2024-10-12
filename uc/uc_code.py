@@ -74,7 +74,8 @@ class CodeGenerator(NodeVisitor):
     # them if needed.
 
     def visit_Constant(self, node: Node):
-        if node.type.name == "string":
+        
+        if hasattr(node.type, 'name') and node.type.name == "string":
             _target = self.new_text("str")
             inst = ("global_string", _target, node.value)
             self.text.append(inst)
@@ -82,7 +83,7 @@ class CodeGenerator(NodeVisitor):
             # Create a new temporary variable name
             _target = self.new_temp()
             # Make the SSA opcode and append to list of generated instructions
-            inst = ("literal_" + node.type.name, node.value, _target)
+            inst = ("literal_" + node.type, node.value, _target)
             self.current_block.append(inst)
         # Save the name of the temporary variable where the value was placed
         node.gen_location = _target
@@ -121,12 +122,16 @@ class CodeGenerator(NodeVisitor):
 
     def visit_VarDecl(self, node: Node):
         # Allocate on stack memory
+
         _varname = "%" + node.declname.name
         inst = ("alloc_" + node.type.name, _varname)
-        self.current_block.append(inst)
+
+        if self.current_block != None:
+            self.current_block.append(inst)
 
         # Store optional init val
-        _init = node.decl.init
+
+        _init = node.declname.init if hasattr(node.declname, 'init') else None
         if _init is not None:
             self.visit(_init)
             inst = (
@@ -138,6 +143,9 @@ class CodeGenerator(NodeVisitor):
 
     def visit_Program(self, node: Node):
         # Visit all of the global declarations
+        
+        print('Chegou Aqui')
+        print(node)
         for _decl in node.gdecls:
             self.visit(_decl)
         # At the end of codegen, first init the self.code with
@@ -147,6 +155,7 @@ class CodeGenerator(NodeVisitor):
         node.text = self.text.copy()
         # After, visit all the function definitions and emit the
         # code stored inside basic blocks.
+
         for _decl in node.gdecls:
             if isinstance(_decl, FuncDef):
                 # _decl.cfg contains the Control Flow Graph for the function
