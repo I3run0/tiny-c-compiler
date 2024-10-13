@@ -3,12 +3,13 @@ import pathlib
 import sys
 from typing import Dict, List, Tuple
 
-from uc.uc_ast import FuncDef, Node
+from uc.uc_ast import Compound, Decl, ExprList, FuncDef, Node, ParamList, Print, VarDecl
 from uc.uc_block import (
     CFG,
     BasicBlock,
     Block,
     ConditionBlock,
+    EmitBlocks,
     format_instruction,
 )
 from uc.uc_interpreter import Interpreter
@@ -22,7 +23,9 @@ class CodeGenerator(NodeVisitor):
     with Basic Blocks & Control Flow Graph.
     """
 
-    def __init__(self, viewcfg: bool):
+    def __init__(self, viewcfg: bool, debug_print: bool):
+        # To debug with debug_print
+        self._enable_stdout_debug = debug_print
         self.viewcfg: bool = viewcfg
         self.current_block: Block = None
 
@@ -73,8 +76,7 @@ class CodeGenerator(NodeVisitor):
     # A few sample methods follow. Do not hesitate to complete or change
     # them if needed.
 
-    def visit_Constant(self, node: Node):
-        
+    def visit_Constant(self, node: Node):        
         if hasattr(node.type, 'name') and node.type.name == "string":
             _target = self.new_text("str")
             inst = ("global_string", _target, node.value)
@@ -115,7 +117,7 @@ class CodeGenerator(NodeVisitor):
         # TODO: Load the location containing the expression
 
         # Create the opcode and append to list
-        inst = ("print_" + node.expr.type.name, node.expr.gen_location)
+        inst = ("print_" + node.expr.type, node.expr.gen_location)
         self.current_block.append(inst)
 
         # TODO: Handle the cases when node.expr is None or ExprList
@@ -130,7 +132,6 @@ class CodeGenerator(NodeVisitor):
             self.current_block.append(inst)
 
         # Store optional init val
-
         _init = node.declname.init if hasattr(node.declname, 'init') else None
         if _init is not None:
             self.visit(_init)
@@ -143,9 +144,6 @@ class CodeGenerator(NodeVisitor):
 
     def visit_Program(self, node: Node):
         # Visit all of the global declarations
-        
-        print('Chegou Aqui')
-        print(node)
         for _decl in node.gdecls:
             self.visit(_decl)
         # At the end of codegen, first init the self.code with
@@ -156,6 +154,7 @@ class CodeGenerator(NodeVisitor):
         # After, visit all the function definitions and emit the
         # code stored inside basic blocks.
 
+        print(self.current_block)
         for _decl in node.gdecls:
             if isinstance(_decl, FuncDef):
                 # _decl.cfg contains the Control Flow Graph for the function
@@ -171,8 +170,138 @@ class CodeGenerator(NodeVisitor):
                     dot = CFG(_decl.decl.name.name)
                     dot.view(_decl.cfg)  # _decl.cfg contains the CFG for the function
 
-    # TODO: Complete.
+    def visit_FuncDef(self, node: FuncDef):
+        '''
+            Initialize the necessary blocks to construct the CFG of the function. Visit the function declaration. Visit all the declarations within the function. After allocating all declarations, visit the arguments initialization. Visit the body of the function to generate its code. Finally, setup the return block correctly and generate the return statement (even for void function).
+        '''
+        # Create the function block
+        node.cfg = BasicBlock(node.decl.name.name) # Use the function name as label
+        self.current_block = node.cfg
+        self.current_temp = 0 # Set the temporary instruction index
 
+        # Visit the function declaration
+        self.visit(node.decl)
+
+        # Visit the function body
+        self.visit(node.body)
+
+        # Setup the return
+        func_exit = ('exit:',)
+        self.current_block.append(func_exit)
+
+
+    def visit_ParamList(self, node: Node):
+        pass
+
+    def visit_GlobalDecl(self, node: Node):
+        pass
+
+    def visit_Decl(self, node: Decl):
+        self.visit(node.type)
+
+    def visit_ArrayDecl(self, node: Node):
+        pass
+
+    def visit_FuncDecl(self, node: Node):
+        '''
+            Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
+        '''
+        # Generate Function Definition
+        _func_sig: VarDecl = node.type
+        _func_param_types = node.uc_type.parameters_type
+        func_definition = (
+            f'define_{_func_sig.type.name}',
+            f'@{_func_sig.declname.name}',
+            [(_func_param_types[i], f"%{self.new_temp()}") for i in range(len(_func_param_types))]
+        )
+        self.current_block.append(func_definition)
+
+        # Generate the Entry point
+        entry = ('entry:',)
+        self.current_block.append(entry)
+
+        # Generate the temp retun
+        if _func_sig.type.name != 'void':
+            temp_return = (f'alloc_f{_func_sig.type.name}', f'%{self.new_temp()}')
+            self.current_block.append(temp_return)
+
+        # Visit function arguments
+        if node.params != None:
+            func_parmeters: ParamList = node.params
+            for param in func_parmeters.params:
+                self.visit(param)
+                
+
+    def visit_DeclList(self, node: Node):
+        pass
+
+    def visit_Type(self, node: Node):
+        pass
+
+    def visit_If(self, node: Node):
+        pass
+
+    def visit_For(self, node: Node):
+        pass
+
+    def visit_While(self, node: Node):
+        pass
+
+    def visit_Compound(self, node: Compound):
+        for statment in node.staments:
+            self.visit(statment)
+
+    def visit_Assignment(self, node: Node):
+        pass
+
+    def visit_Break(self, node: Node):
+        pass
+
+    def visit_FuncCall(self, node: Node):
+        pass
+
+    def visit_Assert(self, node: Node):
+        pass
+
+    def visit_EmptyStatement(self, node: Node):
+        pass
+    
+    '''
+    def visit_Print(self, node: Print):
+        if node.expr != None:
+            if isinstance(node, ExprList):
+                pass # Todo
+                self.visit(node.expr) # Single expression
+        else:
+            print_void = ('print_void',)
+            self.current_block.append(print_void)
+    '''
+
+    def visit_Read(self, node: Node):
+        pass
+
+    def visit_Return(self, node: Node):
+        pass
+    
+    '''
+    def visit_Constant(self, node: Node):
+        pass
+    '''
+
+    def visit_ID(self, node: Node):
+        pass
+
+    def visit_BinaryOp(self, node: Node):
+        pass
+
+    def visit_UnaryOp(self, node: Node):
+        pass
+
+    def visit_ExprList(self, node: Node):
+        pass
+
+    def visit_InitList(self, node: Node):
+        pass
 
 def main():
     # create argument parser
@@ -194,11 +323,16 @@ def main():
     parser.add_argument(
         "--debug", help="Run interpreter in debug mode.", action="store_true"
     )
+    parser.add_argument(
+        "--debug_print", action="store_true"
+    )
+
     args = parser.parse_args()
 
     print_ir = args.ir
     create_cfg = args.cfg
     interpreter_debug = args.debug
+    enable_stdout_debug_print = args.debug_print
 
     # get input path
     input_file = args.input_file
@@ -218,7 +352,7 @@ def main():
     sema = Visitor()
     sema.visit(ast)
 
-    gen = CodeGenerator(create_cfg)
+    gen = CodeGenerator(create_cfg, enable_stdout_debug_print)
     gen.visit(ast)
     gencode = gen.code
 

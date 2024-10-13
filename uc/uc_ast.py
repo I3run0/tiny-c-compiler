@@ -32,7 +32,7 @@ def represent_node(obj, indent):
             for name, value in vars(obj).items():
 
                 # is an irrelevant attribute: skip it.
-                if name in ('bind', 'coord'):
+                if name in ('bind', 'coord', 'parent'):
                     continue
 
                 # relevant attribte not set: skip it.
@@ -108,14 +108,14 @@ class Node(ABC):
         else:
             buf.write(lead + self.__class__.__name__ + ":")
             inner_offset = len(self.__class__.__name__ + ":")
-
+        
         if self.attr_names:
             if attrnames:
                 nvlist = [
                     (n, represent_node(getattr(self, n),
                      offset+inner_offset+1+len(n)+1))
                     for n in self.attr_names
-                    if getattr(self, n) is not None
+                    if getattr(self, n) is not None 
                 ]
                 attrstr = ", ".join("%s=%s" % nv for nv in nvlist)
             else:

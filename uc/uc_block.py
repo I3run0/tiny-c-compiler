@@ -73,6 +73,8 @@ class Block:
     def __iter__(self):
         return iter(self.instructions)
 
+    def __str__(self):
+        return str(self.instructions)
 
 class BasicBlock(Block):
     """

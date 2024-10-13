@@ -51,12 +51,6 @@ from uc.uc_type import (
 
 ENABLE_STDOUT_DEBUG = False
 
-
-def debug_print(msg):
-    if ENABLE_STDOUT_DEBUG:
-        print(msg, file=sys.stdout)
-
-
 def node_to_debug_string(node):
     if ENABLE_STDOUT_DEBUG:
         clone = deepcopy(node)
@@ -149,7 +143,7 @@ class NodeVisitor:
     XXX is the class name you want to visit with these
     methods.
     """
-
+    _enable_stdout_debug = ENABLE_STDOUT_DEBUG
     _method_cache = None
 
     def visit(self, node):
@@ -182,12 +176,12 @@ class NodeVisitor:
             child.parent = node
 
     def debug_print_visit(self, node):
-        if ENABLE_STDOUT_DEBUG:
-            # Removes parent from print
+        if self._enable_stdout_debug:
             clone = deepcopy(node)
             if hasattr(clone, "parent"):
                 delattr(clone, "parent")
-            debug_print(f"Visiting {clone}")
+            print(f"Visiting {clone}", file=sys.stdout)
+
 
 
 class Visitor(NodeVisitor):
@@ -206,6 +200,7 @@ class Visitor(NodeVisitor):
             "void": VoidType,
             "string": StringType,
         }
+        self._enable_stdout_debug = ENABLE_STDOUT_DEBUG
         # TODO: Complete...
 
     def _assert_semantic(self, condition: bool, msg_code: int, coord, name: str = "", ltype="", rtype=""):
