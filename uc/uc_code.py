@@ -3,7 +3,7 @@ import pathlib
 import sys
 from typing import Dict, List, Tuple
 
-from uc.uc_ast import Compound, Decl, ExprList, FuncDef, Node, ParamList, Print, VarDecl
+from uc.uc_ast import Compound, Decl, ExprList, FuncDef, Node, ParamList, Print, VarDecl, Assert, GlobalDecl, FuncDecl
 from uc.uc_block import (
     CFG,
     BasicBlock,
@@ -45,6 +45,10 @@ class CodeGenerator(NodeVisitor):
 
         # TODO: Complete if needed.
 
+    def debug_print(self, msg):
+        if self._enable_stdout_debug:
+            print(msg, file=sys.stdout)
+
     def show(self, buf=sys.stdout):
         _str = ""
         for _code in self.code:
@@ -76,7 +80,7 @@ class CodeGenerator(NodeVisitor):
     # A few sample methods follow. Do not hesitate to complete or change
     # them if needed.
 
-    def visit_Constant(self, node: Node):        
+    def visit_Constant(self, node: Node):
         if hasattr(node.type, 'name') and node.type.name == "string":
             _target = self.new_text("str")
             inst = ("global_string", _target, node.value)
@@ -104,7 +108,8 @@ class CodeGenerator(NodeVisitor):
 
         # Create the opcode and append to list
         opcode = binary_ops[node.op] + "_" + node.left.type.name
-        inst = (opcode, node.left.gen_location, node.right.gen_location, target)
+        inst = (opcode, node.left.gen_location,
+                node.right.gen_location, target)
         self.current_block.append(inst)
 
         # Store location of the result on the node
@@ -123,6 +128,9 @@ class CodeGenerator(NodeVisitor):
         # TODO: Handle the cases when node.expr is None or ExprList
 
     def visit_VarDecl(self, node: Node):
+        """
+        Allocate the variable (global or local) with the correct initial value (if there is any).
+        """
         # Allocate on stack memory
 
         _varname = "%" + node.declname.name
@@ -143,6 +151,9 @@ class CodeGenerator(NodeVisitor):
             self.current_block.append(inst)
 
     def visit_Program(self, node: Node):
+        """
+        Start by visiting all global declarations. Then, visit all the function definitions and emit the code stored inside basic blocks.
+        """
         # Visit all of the global declarations
         for _decl in node.gdecls:
             self.visit(_decl)
@@ -154,7 +165,7 @@ class CodeGenerator(NodeVisitor):
         # After, visit all the function definitions and emit the
         # code stored inside basic blocks.
 
-        print(self.current_block)
+        self.debug_print(self.current_block)
         for _decl in node.gdecls:
             if isinstance(_decl, FuncDef):
                 # _decl.cfg contains the Control Flow Graph for the function
@@ -168,16 +179,18 @@ class CodeGenerator(NodeVisitor):
             for _decl in node.gdecls:
                 if isinstance(_decl, FuncDef):
                     dot = CFG(_decl.decl.name.name)
-                    dot.view(_decl.cfg)  # _decl.cfg contains the CFG for the function
+                    # _decl.cfg contains the CFG for the function
+                    dot.view(_decl.cfg)
 
     def visit_FuncDef(self, node: FuncDef):
-        '''
-            Initialize the necessary blocks to construct the CFG of the function. Visit the function declaration. Visit all the declarations within the function. After allocating all declarations, visit the arguments initialization. Visit the body of the function to generate its code. Finally, setup the return block correctly and generate the return statement (even for void function).
-        '''
+        """
+        Initialize the necessary blocks to construct the CFG of the function. Visit the function declaration. Visit all the declarations within the function. After allocating all declarations, visit the arguments initialization. Visit the body of the function to generate its code. Finally, setup the return block correctly and generate the return statement (even for void function).
+        """
         # Create the function block
-        node.cfg = BasicBlock(node.decl.name.name) # Use the function name as label
+        # Use the function name as label
+        node.cfg = BasicBlock(node.decl.name.name)
         self.current_block = node.cfg
-        self.current_temp = 0 # Set the temporary instruction index
+        self.current_temp = 0  # Set the temporary instruction index
 
         # Visit the function declaration
         self.visit(node.decl)
@@ -189,30 +202,45 @@ class CodeGenerator(NodeVisitor):
         func_exit = ('exit:',)
         self.current_block.append(func_exit)
 
+    def visit_ParamList(self, node: ParamList):
+        """
+        Just visit all arguments.
+        """
+        for param in node.params:
+            self.visit(param)
 
-    def visit_ParamList(self, node: Node):
-        pass
-
-    def visit_GlobalDecl(self, node: Node):
-        pass
+    def visit_GlobalDecl(self, node: GlobalDecl):
+        """
+        Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
+        """
+        for _decl in node.decls:
+            if not isinstance(_decl, FuncDecl):
+                self.visit(_decl)
 
     def visit_Decl(self, node: Decl):
+        """
+        Visit the type of the node (i.e., VarDecl, FuncDecl, etc.).
+        """
         self.visit(node.type)
 
     def visit_ArrayDecl(self, node: Node):
+        """
+        Visit the node type.
+        """
         pass
 
     def visit_FuncDecl(self, node: Node):
-        '''
-            Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
-        '''
+        """
+        Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
+        """
         # Generate Function Definition
         _func_sig: VarDecl = node.type
         _func_param_types = node.uc_type.parameters_type
         func_definition = (
             f'define_{_func_sig.type.name}',
             f'@{_func_sig.declname.name}',
-            [(_func_param_types[i], f"%{self.new_temp()}") for i in range(len(_func_param_types))]
+            [(_func_param_types[i], f"%{self.new_temp()}")
+             for i in range(len(_func_param_types))]
         )
         self.current_block.append(func_definition)
 
@@ -222,7 +250,8 @@ class CodeGenerator(NodeVisitor):
 
         # Generate the temp retun
         if _func_sig.type.name != 'void':
-            temp_return = (f'alloc_f{_func_sig.type.name}', f'%{self.new_temp()}')
+            temp_return = (
+                f'alloc_f{_func_sig.type.name}', f'%{self.new_temp()}')
             self.current_block.append(temp_return)
 
         # Visit function arguments
@@ -230,42 +259,75 @@ class CodeGenerator(NodeVisitor):
             func_parmeters: ParamList = node.params
             for param in func_parmeters.params:
                 self.visit(param)
-                
 
     def visit_DeclList(self, node: Node):
+        """
+        Visit all of the declarations that appear inside for statement.
+        """
         pass
 
     def visit_Type(self, node: Node):
+        """
+        Do nothing: just pass.
+        """
         pass
 
     def visit_If(self, node: Node):
+        """
+        First, generate the evaluation of the condition (visit it). Create the required blocks and the branch for the condition. Move to the first block and generate the statement related to the then, create the branch to exit. In case, there is an else block, generate it in a similar way.
+        """
         pass
 
     def visit_For(self, node: Node):
+        """
+        First, generate the initialization of the For and creates all the blocks required. Then, generate the jump to the condition block and generate the condition and the correct conditional branch. Generate the body of the For followed by the jump to the increment block. Generate the increment and the correct jump.
+        """
         pass
 
     def visit_While(self, node: Node):
+        """
+        The generation of While is similar to For except that it does not require the part related to initialization and increment.
+        """
         pass
 
     def visit_Compound(self, node: Compound):
+        """
+        Visit the list of block items (declarations or statements).
+        """
         for statment in node.staments:
             self.visit(statment)
 
     def visit_Assignment(self, node: Node):
+        """
+        First, visit right side and load the value according to its type. Then, visit the left side and generate the code according to the assignment operator and the type of the expression (ID or ArrayRef).
+        """
         pass
 
     def visit_Break(self, node: Node):
+        """
+        Generate a jump instruction to the current exit label.
+        """
         pass
 
     def visit_FuncCall(self, node: Node):
+        """
+        Start by generating the code for the arguments: for each one of them, visit the expression and generate a param_type instruction with its value. Then, allocate a temporary for the return value and generate the code to call the function.
+        """
         pass
 
-    def visit_Assert(self, node: Node):
+    def visit_Assert(self, node: Assert):
+        """
+        The assert is a conditional statement which generate code quite similar to the If Block. If the expression is false, the program should issue an error message (assertfail) and terminate. If the expression is true, the program proceeds to the next sentence.
+
+Visit the assert condition. Create the blocks for the condition and adust their predecessors. Generate the branch instruction and adjust the blocks to jump according to the condition. Generate the code for unsuccessful assert, generate the print instruction and the jump instruction to the return block, and successful assert.
+        """
+        self.visit(node.expr)
+
         pass
 
     def visit_EmptyStatement(self, node: Node):
         pass
-    
+
     '''
     def visit_Print(self, node: Print):
         if node.expr != None:
@@ -282,7 +344,7 @@ class CodeGenerator(NodeVisitor):
 
     def visit_Return(self, node: Node):
         pass
-    
+
     '''
     def visit_Constant(self, node: Node):
         pass
@@ -302,6 +364,7 @@ class CodeGenerator(NodeVisitor):
 
     def visit_InitList(self, node: Node):
         pass
+
 
 def main():
     # create argument parser
