@@ -57,13 +57,14 @@ class CodeGenerator(NodeVisitor):
         # To debug with debug_print
         self._enable_stdout_debug = debug_print
         self.viewcfg: bool = viewcfg
-        self.current_block: Block = None
+        # TODO: Remove this BasicBlock initialization and handle blocks correctly
+        self.current_block: Block = BasicBlock("temp")
 
         # version dictionary for temporaries. We use the name as a Key
         self.fname: str = "_glob_"
-        self.versions: Dict[str, int] = {self.fname: 0}
+        self.versions: Dict[str, int] = {self.fname: 1}
         # version dictionary for labels to avoid collisions
-        self.label_versions: Dict[str, int] = {"if": 0, "while": 0, "for": 0}
+        self.label_versions: Dict[str, int] = {"if": 1, "while": 1, "for": 1}
 
         # The generated code (list of tuples)
         # At the end of visit_program, we call each function definition to emit
@@ -81,6 +82,11 @@ class CodeGenerator(NodeVisitor):
         if self._enable_stdout_debug:
             print(msg, file=sys.stdout)
 
+    def debug_print_instructions(self, instructions: List[Tuple[str]]):
+        if self._enable_stdout_debug:
+            for inst in instructions:
+                print(inst, file=sys.stdout)
+
     def show(self, buf=sys.stdout):
         _str = ""
         for _code in self.code:
@@ -96,6 +102,12 @@ class CodeGenerator(NodeVisitor):
         name = "%" + "%d" % (self.versions[self.fname])
         self.versions[self.fname] += 1
         return name
+
+    def current_temp(self) -> str:
+        """
+        Return the current temporary variable name.
+        """
+        return "%" + "%d" % (self.versions[self.fname] - 1)
 
     def new_temp_label(self, type: str) -> str:
         """
@@ -169,10 +181,14 @@ class CodeGenerator(NodeVisitor):
 
         # TODO: Handle the cases when node.expr is None or ExprList
 
-    def visit_VarDecl(self, node: Node):
+    def visit_VarDecl(self, node: VarDecl):
         """
         Allocate the variable (global or local) with the correct initial value (if there is any).
         """
+        if isinstance(node.parent.parent, GlobalDecl):
+            # Global declarations handled at GlobalDecl
+            return
+
         # Allocate on stack memory
 
         _varname = "%" + node.declname.name
@@ -206,22 +222,27 @@ class CodeGenerator(NodeVisitor):
         # After, visit all the function definitions and emit the
         # code stored inside basic blocks.
 
-        self.debug_print(self.current_block)
-        for _decl in node.gdecls:
-            if isinstance(_decl, FuncDef):
-                # _decl.cfg contains the Control Flow Graph for the function
-                # cfg points to start basic block
-                bb = EmitBlocks()
-                bb.visit(_decl.cfg)
-                for _code in bb.code:
-                    self.code.append(_code)
+        # TODO: Correctly handle function definitions blocks
+        bb = EmitBlocks()
+        bb.visit(self.current_block)
+        self.code += bb.code
+        self.debug_print_instructions(self.code)
 
-        if self.viewcfg:  # evaluate to True if -cfg flag is present in command line
-            for _decl in node.gdecls:
-                if isinstance(_decl, FuncDef):
-                    dot = CFG(_decl.decl.name.name)
-                    # _decl.cfg contains the CFG for the function
-                    dot.view(_decl.cfg)
+        # for _decl in node.gdecls:
+        #     if isinstance(_decl, FuncDef):
+        #         # _decl.cfg contains the Control Flow Graph for the function
+        #         # cfg points to start basic block
+        #         bb = EmitBlocks()
+        #         bb.visit(_decl.cfg)
+        #         for _code in bb.code:
+        #             self.code.append(_code)
+
+        # if self.viewcfg:  # evaluate to True if -cfg flag is present in command line
+        #     for _decl in node.gdecls:
+        #         if isinstance(_decl, FuncDef):
+        #             dot = CFG(_decl.decl.name.name)
+        #             # _decl.cfg contains the CFG for the function
+        #             dot.view(_decl.cfg)
 
     def visit_FuncDef(self, node: FuncDef):
         """
@@ -258,11 +279,27 @@ class CodeGenerator(NodeVisitor):
             if not isinstance(_decl, FuncDecl):
                 self.visit(_decl)
 
+                inst = (f'global_{_decl.type.uc_type.typename}',
+                        f'@{_decl.name.name}')
+                if hasattr(_decl, 'init'):
+                    inst += (_decl.init.value,)
+
+                self.current_block.append(inst)
+
     def visit_Decl(self, node: Decl):
         """
         Visit the type of the node (i.e., VarDecl, FuncDecl, etc.).
         """
+        self.visit(node.name)
         self.visit(node.type)
+
+        if isinstance(node.parent, GlobalDecl):
+            # Global declarations handled at GlobalDecl
+            pass
+        else:
+            node.gen_location = f'%{node.name}'
+            self.current_block.append(
+                (f'alloc_{node.type.uc_type.typename}', f'%{node.name.name}'))
 
     def visit_ArrayDecl(self, node: Node):
         """
@@ -280,7 +317,7 @@ class CodeGenerator(NodeVisitor):
         func_definition = (
             f'define_{_func_sig.type.name}',
             f'@{_func_sig.declname.name}',
-            [(_func_param_types[i], f"%{self.new_temp()}")
+            [(_func_param_types[i].typename, self.new_temp())
              for i in range(len(_func_param_types))]
         )
         self.current_block.append(func_definition)
@@ -291,9 +328,11 @@ class CodeGenerator(NodeVisitor):
 
         # Generate the temp retun
         if _func_sig.type.name != 'void':
-            temp_return = (
-                f'alloc_f{_func_sig.type.name}', f'%{self.new_temp()}')
-            self.current_block.append(temp_return)
+            return_var = self.new_temp()
+            self.current_block.append(
+                (f'load_{_func_sig.type.name}', self.current_temp(), return_var))
+            self.current_block.append(
+                (f'return_{_func_sig.type.name}', return_var))
 
         # Visit function arguments
         if node.params != None:
@@ -405,12 +444,13 @@ class CodeGenerator(NodeVisitor):
     '''
 
     def visit_ID(self, node: Node):
-        if isinstance(node.parent, Decl):
+        if hasattr(node, 'parent') and isinstance(node.parent, Decl):
+            # Handle code generation for declarions on Decl node
             pass
         else:
             node.gen_location = self.new_temp()
-            self.current_block.append(('load', node.name, node.gen_location))
-            self.debug_print(f"Parent: {node.parent}")
+            self.current_block.append(
+                (f'load_{node.uc_type.typename}', f'%{node.name}', node.gen_location))
 
     def visit_BinaryOp(self, node: Node):
         pass

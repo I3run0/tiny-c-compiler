@@ -422,6 +422,8 @@ class Decl(DeclType):
 
     def children(self):
         nodelist = []
+        if self.name is not None:
+            nodelist.append(("name", self.name))
         if self.type is not None:
             nodelist.append(("type", self.type))
         if self.init is not None:
