@@ -3,7 +3,29 @@ import pathlib
 import sys
 from typing import Dict, List, Tuple
 
-from uc.uc_ast import Compound, Decl, ExprList, FuncDef, Node, ParamList, Print, VarDecl, Assert, GlobalDecl, FuncDecl
+from uc.uc_ast import (
+    Compound,
+    Decl,
+    ExprList,
+    FuncDef,
+    Node,
+    ParamList,
+    Print,
+    VarDecl,
+    Assert,
+    GlobalDecl,
+    FuncDecl,
+    If,
+    For,
+    While,
+    Break,
+    Read,
+    Return,
+    ID,
+    BinaryOp,
+    UnaryOp,
+    InitList
+)
 from uc.uc_block import (
     CFG,
     BasicBlock,
@@ -15,6 +37,14 @@ from uc.uc_block import (
 from uc.uc_interpreter import Interpreter
 from uc.uc_parser import UCParser
 from uc.uc_sema import NodeVisitor, Visitor
+
+binary_ops = {
+    "+": "add",
+    "-": "sub",
+    "*": "mul",
+    "/": "div",
+    "%": "mod",
+}
 
 
 class CodeGenerator(NodeVisitor):
@@ -32,6 +62,8 @@ class CodeGenerator(NodeVisitor):
         # version dictionary for temporaries. We use the name as a Key
         self.fname: str = "_glob_"
         self.versions: Dict[str, int] = {self.fname: 0}
+        # version dictionary for labels to avoid collisions
+        self.label_versions: Dict[str, int] = {"if": 0, "while": 0, "for": 0}
 
         # The generated code (list of tuples)
         # At the end of visit_program, we call each function definition to emit
@@ -63,6 +95,16 @@ class CodeGenerator(NodeVisitor):
             self.versions[self.fname] = 1
         name = "%" + "%d" % (self.versions[self.fname])
         self.versions[self.fname] += 1
+        return name
+
+    def new_temp_label(self, type: str) -> str:
+        """
+        Create a new label an if.then, if.end, if.else, for.cond, etc.
+        """
+        if type not in self.label_versions:
+            self.label_versions[type] = 1
+        name = f"{type}" + ".%d" % (self.label_versions[type])
+        self.label_versions[type] += 1
         return name
 
     def new_text(self, typename: str) -> str:
@@ -122,7 +164,7 @@ class CodeGenerator(NodeVisitor):
         # TODO: Load the location containing the expression
 
         # Create the opcode and append to list
-        inst = ("print_" + node.expr.type, node.expr.gen_location)
+        inst = ("print_" + node.expr.uc_type.typename, node.expr.gen_location)
         self.current_block.append(inst)
 
         # TODO: Handle the cases when node.expr is None or ExprList
@@ -136,8 +178,7 @@ class CodeGenerator(NodeVisitor):
         _varname = "%" + node.declname.name
         inst = ("alloc_" + node.type.name, _varname)
 
-        if self.current_block != None:
-            self.current_block.append(inst)
+        self.current_block.append(inst)
 
         # Store optional init val
         _init = node.declname.init if hasattr(node.declname, 'init') else None
@@ -272,11 +313,25 @@ class CodeGenerator(NodeVisitor):
         """
         pass
 
-    def visit_If(self, node: Node):
+    def visit_If(self, node: If):
         """
         First, generate the evaluation of the condition (visit it). Create the required blocks and the branch for the condition. Move to the first block and generate the statement related to the then, create the branch to exit. In case, there is an else block, generate it in a similar way.
         """
-        pass
+        self.visit(node.cond)
+
+        then_label = self.new_temp_label("if.then")
+        end_label = self.new_temp_label("if.end")
+
+        inst = ("cbranch", node.cond.gen_location, then_label, end_label)
+        self.current_block.append(inst)
+
+        # then_block = BasicBlock(self.new_temp_label(then_label))
+        # # self.visit(node.iftrue)
+
+        # then_block.
+
+        # self.current_block.append(ConditionBlock(then_label))
+        # self.current_block.append(ConditionBlock(end_label))
 
     def visit_For(self, node: Node):
         """
@@ -351,7 +406,12 @@ Visit the assert condition. Create the blocks for the condition and adust their 
     '''
 
     def visit_ID(self, node: Node):
-        pass
+        if isinstance(node.parent, Decl):
+            pass
+        else:
+            node.gen_location = self.new_temp()
+            self.current_block.append(('load', node.name, node.gen_location))
+            self.debug_print(f"Parent: {node.parent}")
 
     def visit_BinaryOp(self, node: Node):
         pass
