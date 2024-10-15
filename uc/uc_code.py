@@ -1,7 +1,7 @@
 import argparse
 import pathlib
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 from uc.uc_ast import (
     Compound,
@@ -62,6 +62,7 @@ class CodeGenerator(NodeVisitor):
 
         # version dictionary for temporaries. We use the name as a Key
         self.fname: str = "_glob_"
+        self.return_temp: Union[str, None] = None
         self.versions: Dict[str, int] = {self.fname: 1}
         # version dictionary for labels to avoid collisions
         self.label_versions: Dict[str, int] = {"if": 1, "while": 1, "for": 1}
@@ -254,6 +255,9 @@ class CodeGenerator(NodeVisitor):
         # self.current_block = node.cfg
         # self.current_temp = 0  # Set the temporary instruction index
 
+        self.fname = node.decl.name.name
+        self.return_temp = None
+
         # Visit the function declaration
         self.visit(node.decl)
 
@@ -326,13 +330,11 @@ class CodeGenerator(NodeVisitor):
         entry = ('entry:',)
         self.current_block.append(entry)
 
-        # Generate the temp retun
+        # Generate the temp return
         if _func_sig.type.name != 'void':
-            return_var = self.new_temp()
-            self.current_block.append(
-                (f'load_{_func_sig.type.name}', self.current_temp(), return_var))
-            self.current_block.append(
-                (f'return_{_func_sig.type.name}', return_var))
+            self.return_temp = self.new_temp()
+            self.current_block.append((
+                f'alloc_{_func_sig.type.name}', self.return_temp))
 
         # Visit function arguments
         if node.params != None:
@@ -435,8 +437,16 @@ class CodeGenerator(NodeVisitor):
     def visit_Read(self, node: Node):
         pass
 
-    def visit_Return(self, node: Node):
-        pass
+    def visit_Return(self, node: Return):
+        if node.expr is not None:
+            return_var = self.new_temp()
+
+            self.current_block.append(
+                (f'load_{node.expr.uc_type.typename}', self.return_temp, return_var))
+            self.current_block.append(
+                (f'return_{node.expr.uc_type.typename}', return_var))
+        else:
+            self.current_block.append(('return_void',))
 
     '''
     def visit_Constant(self, node: Node):
