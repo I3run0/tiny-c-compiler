@@ -227,11 +227,11 @@ class CodeGenerator(NodeVisitor):
         """
         Initialize the necessary blocks to construct the CFG of the function. Visit the function declaration. Visit all the declarations within the function. After allocating all declarations, visit the arguments initialization. Visit the body of the function to generate its code. Finally, setup the return block correctly and generate the return statement (even for void function).
         """
-        # Create the function block
-        # Use the function name as label
-        node.cfg = BasicBlock(node.decl.name.name)
-        self.current_block = node.cfg
-        self.current_temp = 0  # Set the temporary instruction index
+        # # Create the function block
+        # # Use the function name as label
+        # node.cfg = BasicBlock(node.decl.name.name)
+        # self.current_block = node.cfg
+        # self.current_temp = 0  # Set the temporary instruction index
 
         # Visit the function declaration
         self.visit(node.decl)
@@ -374,7 +374,7 @@ class CodeGenerator(NodeVisitor):
         """
         The assert is a conditional statement which generate code quite similar to the If Block. If the expression is false, the program should issue an error message (assertfail) and terminate. If the expression is true, the program proceeds to the next sentence.
 
-Visit the assert condition. Create the blocks for the condition and adust their predecessors. Generate the branch instruction and adjust the blocks to jump according to the condition. Generate the code for unsuccessful assert, generate the print instruction and the jump instruction to the return block, and successful assert.
+        Visit the assert condition. Create the blocks for the condition and adust their predecessors. Generate the branch instruction and adjust the blocks to jump according to the condition. Generate the code for unsuccessful assert, generate the print instruction and the jump instruction to the return block, and successful assert.
         """
         self.visit(node.expr)
 
@@ -383,16 +383,15 @@ Visit the assert condition. Create the blocks for the condition and adust their 
     def visit_EmptyStatement(self, node: Node):
         pass
 
-    '''
     def visit_Print(self, node: Print):
         if node.expr != None:
-            if isinstance(node, ExprList):
-                pass # Todo
-                self.visit(node.expr) # Single expression
+            # TODO: Maybe handle ExprList differently
+            # if isinstance(node, ExprList):
+            #     pass  # Todo
+            self.visit(node.expr)  # Single expression
         else:
             print_void = ('print_void',)
             self.current_block.append(print_void)
-    '''
 
     def visit_Read(self, node: Node):
         pass
