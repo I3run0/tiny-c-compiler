@@ -39,15 +39,6 @@ from uc.uc_interpreter import Interpreter
 from uc.uc_parser import UCParser
 from uc.uc_sema import NodeVisitor, Visitor
 
-binary_ops = {
-    "+": "add",
-    "-": "sub",
-    "*": "mul",
-    "/": "div",
-    "%": "mod",
-}
-
-
 class CodeGenerator(NodeVisitor):
     """
     Node visitor class that creates 3-address encoded instruction sequences
@@ -80,6 +71,17 @@ class CodeGenerator(NodeVisitor):
         )  # Used for global declarations & constants (list, strings)
 
         # TODO: Complete if needed.
+        self.binary_ops = {
+            "+": "add",
+            "-": "sub",
+            "*": "mul",
+            "/": "div",
+            "%": "mod",
+            ">": 'gt',
+            "<": "lt",
+            "==": "eq",
+            "!": "not",
+        }
 
     def debug_print(self, msg):
         if self._enable_stdout_debug:
@@ -166,8 +168,8 @@ class CodeGenerator(NodeVisitor):
         if not isinstance(node.rvalue, BinaryOp) and not isinstance(
             node.lvalue, BinaryOp
         ):
-            self.visit(node.lvalue)
             self.visit(node.rvalue)
+            self.visit(node.lvalue)
         else:
             self.visit(node.rvalue)
             self.visit(node.lvalue)
@@ -180,7 +182,7 @@ class CodeGenerator(NodeVisitor):
         target = self.new_temp()
 
         # Create the opcode and append to list
-        opcode = binary_ops[node.op] + "_" + node.lvalue.uc_type.typename
+        opcode = self.binary_ops[node.op] + "_" + node.lvalue.uc_type.typename
         inst = (opcode, node.lvalue.gen_location, node.rvalue.gen_location, target)
         self.current_block.append(inst)
 
@@ -386,12 +388,19 @@ class CodeGenerator(NodeVisitor):
         """
         self.visit(node.cond)
 
+        print(node)
         then_label = self.new_temp_label("if.then")
         end_label = self.new_temp_label("if.end")
 
         inst = ("cbranch", node.cond.gen_location, then_label, end_label)
         self.current_block.append(inst)
 
+        self.current_block.append((f'{then_label}:',))
+        
+        self.visit(node.iftrue)
+        self.current_block.append(('jump', 'exit'))
+        self.current_block.append((f'{end_label}:',))
+        self.current_block.append(('jump', 'exit'))
         # then_block = BasicBlock(self.new_temp_label(then_label))
         # # self.visit(node.iftrue)
 
@@ -513,8 +522,37 @@ class CodeGenerator(NodeVisitor):
                 (f"load_{node.uc_type.typename}", _var_name , node.gen_location)
             )
 
-    def visit_UnaryOp(self, node: Node):
-        pass
+    def visit_UnaryOp(self, node: UnaryOp):
+
+        # First visit expr
+        self.visit(node.expr)
+
+        opcode = self.binary_ops[node.op] + '_' + node.uc_type.typename
+        
+        # TODO Check if the following is the best approach
+        # to threat with negative integers
+
+        inst: Tuple = None
+        if node.op == '-':
+            # This istantiate a new temp %k as zero
+            # to perform node.gen = %k - node.expr
+            
+            # Instantiate the literal zero
+            zero_gen_location = self.new_temp()
+            inst_zero = (f'literal_{node.uc_type.typename}', 0, zero_gen_location)
+            self.current_block.append(inst_zero)
+
+            node.gen_location = self.new_temp()
+            inst = (opcode, node.expr.gen_location, zero_gen_location, node.gen_location)
+   
+        elif node.op == "!":
+            node.gen_location = self.new_temp()
+            inst = (opcode, node.expr.gen_location, node.gen_location)
+
+        self.current_block.append(inst)
+    
+        
+
 
     def visit_ExprList(self, node: Node):
         pass
