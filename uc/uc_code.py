@@ -25,7 +25,7 @@ from uc.uc_ast import (
     ID,
     BinaryOp,
     UnaryOp,
-    InitList
+    InitList,
 )
 from uc.uc_block import (
     CFG,
@@ -138,7 +138,7 @@ class CodeGenerator(NodeVisitor):
     # them if needed.
 
     def visit_Constant(self, node: Node):
-        if hasattr(node.type, 'name') and node.type.name == "string":
+        if hasattr(node.type, "name") and node.type.name == "string":
             _target = self.new_text("str")
             inst = ("global_string", _target, node.value)
             self.text.append(inst)
@@ -153,8 +153,9 @@ class CodeGenerator(NodeVisitor):
 
     def visit_BinaryOp(self, node: BinaryOp):
         # Visit the left and right expressions
-        if not isinstance(node.rvalue, BinaryOp) and \
-           not isinstance(node.lvalue, BinaryOp):
+        if not isinstance(node.rvalue, BinaryOp) and not isinstance(
+            node.lvalue, BinaryOp
+        ):
             self.visit(node.lvalue)
             self.visit(node.rvalue)
         else:
@@ -170,8 +171,7 @@ class CodeGenerator(NodeVisitor):
 
         # Create the opcode and append to list
         opcode = binary_ops[node.op] + "_" + node.lvalue.uc_type.typename
-        inst = (opcode, node.lvalue.gen_location,
-                node.rvalue.gen_location, target)
+        inst = (opcode, node.lvalue.gen_location, node.rvalue.gen_location, target)
         self.current_block.append(inst)
 
         # Store location of the result on the node
@@ -271,13 +271,16 @@ class CodeGenerator(NodeVisitor):
         # Visit the function body
         self.visit(node.body)
 
-        self.current_block.append(('exit:',))
+        self.current_block.append(("exit:",))
 
-        return_var = self.new_temp()
-        self.current_block.append(
-            (f'load_{node.type.uc_type.typename}', self.return_temp, return_var))
-        self.current_block.append(
-            (f'return_{node.type.uc_type.typename}', return_var))
+        # If the function is void is only necessary the exit to the 
+        # interpreter work
+        if node.type.name!= 'void':
+            return_var = self.new_temp()
+            self.current_block.append(
+                (f"load_{node.type.uc_type.typename}", self.return_temp, return_var)
+            )
+            self.current_block.append((f"return_{node.type.uc_type.typename}", return_var))
 
     def visit_ParamList(self, node: ParamList):
         """
@@ -287,8 +290,11 @@ class CodeGenerator(NodeVisitor):
             self.visit(param)
 
         for i, param in enumerate(node.params):
-            inst = (f'store_{param.type.uc_type.typename}',
-                    self.parameters_temp[i], param.type.gen_location)
+            inst = (
+                f"store_{param.type.uc_type.typename}",
+                self.parameters_temp[i],
+                param.type.gen_location,
+            )
             self.current_block.append(inst)
 
     def visit_GlobalDecl(self, node: GlobalDecl):
@@ -299,9 +305,8 @@ class CodeGenerator(NodeVisitor):
             if not isinstance(_decl, FuncDecl):
                 self.visit(_decl)
 
-                inst = (f'global_{_decl.type.uc_type.typename}',
-                        f'@{_decl.name.name}')
-                if hasattr(_decl, 'init'):
+                inst = (f"global_{_decl.type.uc_type.typename}", f"@{_decl.name.name}")
+                if hasattr(_decl, "init"):
                     inst += (_decl.init.value,)
 
                 self.current_block.append(inst)
@@ -326,25 +331,27 @@ class CodeGenerator(NodeVisitor):
         # Generate Function Definition
         _func_sig: VarDecl = node.type
         _func_param_types = node.uc_type.parameters_type
-        self.parameters_temp = [self.new_temp()
-                                for _ in range(len(_func_param_types))]
+        self.parameters_temp = [self.new_temp() for _ in range(len(_func_param_types))]
         func_definition = (
-            f'define_{_func_sig.type.name}',
-            f'@{_func_sig.declname.name}',
-            [(_func_param_types[i].typename, self.parameters_temp[i])
-             for i in range(len(_func_param_types))]
+            f"define_{_func_sig.type.name}",
+            f"@{_func_sig.declname.name}",
+            [
+                (_func_param_types[i].typename, self.parameters_temp[i])
+                for i in range(len(_func_param_types))
+            ],
         )
         self.current_block.append(func_definition)
 
         # Generate the Entry point
-        entry = ('entry:',)
+        entry = ("entry:",)
         self.current_block.append(entry)
 
         # Generate the temp return
-        if _func_sig.type.name != 'void':
+        if _func_sig.type.name != "void":
             self.return_temp = self.new_temp()
-            self.current_block.append((
-                f'alloc_{_func_sig.type.name}', self.return_temp))
+            self.current_block.append(
+                (f"alloc_{_func_sig.type.name}", self.return_temp)
+            )
 
         # Visit function arguments
         if node.params != None:
@@ -423,12 +430,13 @@ class CodeGenerator(NodeVisitor):
 
         for expr in node.args.exprs:
             self.current_block.append(
-                (f'param_{expr.uc_type.typename}', expr.gen_location))
+                (f"param_{expr.uc_type.typename}", expr.gen_location)
+            )
 
         node.gen_location = self.new_temp()
         self.current_block.append(
-            (f'call_{node.uc_type.typename}', node.name.name,
-             node.gen_location))
+            (f"call_{node.uc_type.typename}", node.name.name, node.gen_location)
+        )
 
     def visit_Assert(self, node: Assert):
         """
@@ -443,16 +451,6 @@ class CodeGenerator(NodeVisitor):
     def visit_EmptyStatement(self, node: Node):
         pass
 
-    def visit_Print(self, node: Print):
-        if node.expr != None:
-            # TODO: Maybe handle ExprList differently
-            # if isinstance(node, ExprList):
-            #     pass  # Todo
-            self.visit(node.expr)  # Single expression
-        else:
-            print_void = ('print_void',)
-            self.current_block.append(print_void)
-
     def visit_Read(self, node: Node):
         pass
 
@@ -461,10 +459,20 @@ class CodeGenerator(NodeVisitor):
             self.visit(node.expr)
 
             self.current_block.append(
-                (f'store_{node.expr.uc_type.typename}', node.expr.gen_location, self.return_temp))
-            self.current_block.append(('jump', '%exit',))
+                (
+                    f"store_{node.expr.uc_type.typename}",
+                    node.expr.gen_location,
+                    self.return_temp,
+                )
+            )
+            self.current_block.append(
+                (
+                    "jump",
+                    "%exit",
+                )
+            )
         else:
-            self.current_block.append(('return_void',))
+            self.current_block.append(("return_void",))
 
     def visit_Constant(self, node: Node):
         node.gen_location = self.new_temp()
@@ -478,17 +486,18 @@ class CodeGenerator(NodeVisitor):
             parsed_value = bool(parsed_value)
 
         self.current_block.append(
-            (f'literal_{node.uc_type.typename}',
-             parsed_value, node.gen_location))
+            (f"literal_{node.uc_type.typename}", parsed_value, node.gen_location)
+        )
 
     def visit_ID(self, node: ID):
-        if hasattr(node, 'parent') and isinstance(node.parent, Decl):
+        if hasattr(node, "parent") and isinstance(node.parent, Decl):
             # Handle code generation for declarions on Decl node
             pass
         else:
             node.gen_location = self.new_temp()
             self.current_block.append(
-                (f'load_{node.uc_type.typename}', f'%{node.name}', node.gen_location))
+                (f"load_{node.uc_type.typename}", f"%{node.name}", node.gen_location)
+            )
 
     def visit_UnaryOp(self, node: Node):
         pass
@@ -520,9 +529,7 @@ def main():
     parser.add_argument(
         "--debug", help="Run interpreter in debug mode.", action="store_true"
     )
-    parser.add_argument(
-        "--debug_print", action="store_true"
-    )
+    parser.add_argument("--debug_print", action="store_true")
 
     args = parser.parse_args()
 
