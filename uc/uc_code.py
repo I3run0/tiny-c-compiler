@@ -130,6 +130,16 @@ class CodeGenerator(NodeVisitor):
         self.versions["_glob_"] += 1
         return name
 
+    def is_global(self, varname: str) -> bool:
+        '''
+        Check if the variable is a global one 
+        '''
+        varname = f'@{varname}'
+        for glb in self.text:
+            if varname in glb:
+                return True
+        return False
+    
     # You must implement visit_Nodename methods for all of the other
     # AST nodes.  In your code, you will need to make instructions
     # and append them to the current block code list.
@@ -273,7 +283,7 @@ class CodeGenerator(NodeVisitor):
 
         self.current_block.append(("exit:",))
 
-        # If the function is void is only necessary the exit to the 
+        # For the void function is only necessary the exit to the 
         # interpreter work
         if node.type.name!= 'void':
             return_var = self.new_temp()
@@ -306,10 +316,11 @@ class CodeGenerator(NodeVisitor):
                 self.visit(_decl)
 
                 inst = (f"global_{_decl.type.uc_type.typename}", f"@{_decl.name.name}")
+
                 if hasattr(_decl, "init"):
                     inst += (_decl.init.value,)
 
-                self.current_block.append(inst)
+                self.text.append(inst)
 
     def visit_Decl(self, node: Decl):
         """
@@ -435,7 +446,7 @@ class CodeGenerator(NodeVisitor):
 
         node.gen_location = self.new_temp()
         self.current_block.append(
-            (f"call_{node.uc_type.typename}", node.name.name, node.gen_location)
+            (f"call_{node.uc_type.typename}", f'@{node.name.name}', node.gen_location)
         )
 
     def visit_Assert(self, node: Assert):
@@ -495,8 +506,11 @@ class CodeGenerator(NodeVisitor):
             pass
         else:
             node.gen_location = self.new_temp()
+
+            # If a global or constant var use @
+            _var_name = f'@{node.name}' if self.is_global(node.name) else f"%{node.name}"  
             self.current_block.append(
-                (f"load_{node.uc_type.typename}", f"%{node.name}", node.gen_location)
+                (f"load_{node.uc_type.typename}", _var_name , node.gen_location)
             )
 
     def visit_UnaryOp(self, node: Node):
