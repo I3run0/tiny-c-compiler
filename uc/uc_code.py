@@ -15,6 +15,7 @@ from uc.uc_ast import (
     Assert,
     GlobalDecl,
     FuncDecl,
+    FuncCall,
     If,
     For,
     While,
@@ -204,13 +205,13 @@ class CodeGenerator(NodeVisitor):
         node.gen_location = _varname
 
         # Store optional init val
-        _init = node.declname.init if hasattr(node.declname, 'init') else None
+        _init = node.parent.init
         if _init is not None:
             self.visit(_init)
             inst = (
                 "store_" + node.type.name,
                 _init.gen_location,
-                node.declname.gen_location,
+                node.gen_location,
             )
             self.current_block.append(inst)
 
@@ -412,11 +413,22 @@ class CodeGenerator(NodeVisitor):
         """
         pass
 
-    def visit_FuncCall(self, node: Node):
+    def visit_FuncCall(self, node: FuncCall):
         """
         Start by generating the code for the arguments: for each one of them, visit the expression and generate a param_type instruction with its value. Then, allocate a temporary for the return value and generate the code to call the function.
         """
-        pass
+
+        for expr in node.args.exprs:
+            self.visit(expr)
+
+        for expr in node.args.exprs:
+            self.current_block.append(
+                (f'param_{expr.uc_type.typename}', expr.gen_location))
+
+        node.gen_location = self.new_temp()
+        self.current_block.append(
+            (f'call_{node.uc_type.typename}', node.name.name,
+             node.gen_location))
 
     def visit_Assert(self, node: Assert):
         """
@@ -454,10 +466,20 @@ class CodeGenerator(NodeVisitor):
         else:
             self.current_block.append(('return_void',))
 
-    '''
     def visit_Constant(self, node: Node):
-        pass
-    '''
+        node.gen_location = self.new_temp()
+
+        parsed_value = node.value
+        if node.uc_type.typename == "string":
+            parsed_value = f"@.str.{parsed_value}"
+        elif node.uc_type.typename == "int":
+            parsed_value = int(parsed_value)
+        elif node.uc_type.typename == "bool":
+            parsed_value = bool(parsed_value)
+
+        self.current_block.append(
+            (f'literal_{node.uc_type.typename}',
+             parsed_value, node.gen_location))
 
     def visit_ID(self, node: ID):
         if hasattr(node, 'parent') and isinstance(node.parent, Decl):
