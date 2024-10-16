@@ -63,6 +63,7 @@ class CodeGenerator(NodeVisitor):
         # version dictionary for temporaries. We use the name as a Key
         self.fname: str = "_glob_"
         self.return_temp: Union[str, None] = None
+        self.parameters_temp: Union[List[str], None] = None
         self.versions: Dict[str, int] = {self.fname: 1}
         # version dictionary for labels to avoid collisions
         self.label_versions: Dict[str, int] = {"if": 1, "while": 1, "for": 1}
@@ -149,10 +150,15 @@ class CodeGenerator(NodeVisitor):
         # Save the name of the temporary variable where the value was placed
         node.gen_location = _target
 
-    def visit_BinaryOp(self, node: Node):
+    def visit_BinaryOp(self, node: BinaryOp):
         # Visit the left and right expressions
-        self.visit(node.left)
-        self.visit(node.right)
+        if not isinstance(node.rvalue, BinaryOp) and \
+           not isinstance(node.lvalue, BinaryOp):
+            self.visit(node.lvalue)
+            self.visit(node.rvalue)
+        else:
+            self.visit(node.rvalue)
+            self.visit(node.lvalue)
 
         # TODO:
         # - Load the location containing the left expression
@@ -162,9 +168,9 @@ class CodeGenerator(NodeVisitor):
         target = self.new_temp()
 
         # Create the opcode and append to list
-        opcode = binary_ops[node.op] + "_" + node.left.type.name
-        inst = (opcode, node.left.gen_location,
-                node.right.gen_location, target)
+        opcode = binary_ops[node.op] + "_" + node.lvalue.uc_type.typename
+        inst = (opcode, node.lvalue.gen_location,
+                node.rvalue.gen_location, target)
         self.current_block.append(inst)
 
         # Store location of the result on the node
@@ -191,11 +197,11 @@ class CodeGenerator(NodeVisitor):
             return
 
         # Allocate on stack memory
-
         _varname = "%" + node.declname.name
         inst = ("alloc_" + node.type.name, _varname)
 
         self.current_block.append(inst)
+        node.gen_location = _varname
 
         # Store optional init val
         _init = node.declname.init if hasattr(node.declname, 'init') else None
@@ -264,9 +270,13 @@ class CodeGenerator(NodeVisitor):
         # Visit the function body
         self.visit(node.body)
 
-        # Setup the return
-        func_exit = ('exit:',)
-        self.current_block.append(func_exit)
+        self.current_block.append(('exit:',))
+
+        return_var = self.new_temp()
+        self.current_block.append(
+            (f'load_{node.type.uc_type.typename}', self.return_temp, return_var))
+        self.current_block.append(
+            (f'return_{node.type.uc_type.typename}', return_var))
 
     def visit_ParamList(self, node: ParamList):
         """
@@ -274,6 +284,11 @@ class CodeGenerator(NodeVisitor):
         """
         for param in node.params:
             self.visit(param)
+
+        for i, param in enumerate(node.params):
+            inst = (f'store_{param.type.uc_type.typename}',
+                    self.parameters_temp[i], param.type.gen_location)
+            self.current_block.append(inst)
 
     def visit_GlobalDecl(self, node: GlobalDecl):
         """
@@ -297,14 +312,6 @@ class CodeGenerator(NodeVisitor):
         self.visit(node.name)
         self.visit(node.type)
 
-        if isinstance(node.parent, GlobalDecl):
-            # Global declarations handled at GlobalDecl
-            pass
-        else:
-            node.gen_location = f'%{node.name}'
-            self.current_block.append(
-                (f'alloc_{node.type.uc_type.typename}', f'%{node.name.name}'))
-
     def visit_ArrayDecl(self, node: Node):
         """
         Visit the node type.
@@ -318,10 +325,12 @@ class CodeGenerator(NodeVisitor):
         # Generate Function Definition
         _func_sig: VarDecl = node.type
         _func_param_types = node.uc_type.parameters_type
+        self.parameters_temp = [self.new_temp()
+                                for _ in range(len(_func_param_types))]
         func_definition = (
             f'define_{_func_sig.type.name}',
             f'@{_func_sig.declname.name}',
-            [(_func_param_types[i].typename, self.new_temp())
+            [(_func_param_types[i].typename, self.parameters_temp[i])
              for i in range(len(_func_param_types))]
         )
         self.current_block.append(func_definition)
@@ -338,9 +347,7 @@ class CodeGenerator(NodeVisitor):
 
         # Visit function arguments
         if node.params != None:
-            func_parmeters: ParamList = node.params
-            for param in func_parmeters.params:
-                self.visit(param)
+            self.visit(node.params)
 
     def visit_DeclList(self, node: Node):
         """
@@ -439,12 +446,11 @@ class CodeGenerator(NodeVisitor):
 
     def visit_Return(self, node: Return):
         if node.expr is not None:
-            return_var = self.new_temp()
+            self.visit(node.expr)
 
             self.current_block.append(
-                (f'load_{node.expr.uc_type.typename}', self.return_temp, return_var))
-            self.current_block.append(
-                (f'return_{node.expr.uc_type.typename}', return_var))
+                (f'store_{node.expr.uc_type.typename}', node.expr.gen_location, self.return_temp))
+            self.current_block.append(('jump', '%exit',))
         else:
             self.current_block.append(('return_void',))
 
@@ -453,7 +459,7 @@ class CodeGenerator(NodeVisitor):
         pass
     '''
 
-    def visit_ID(self, node: Node):
+    def visit_ID(self, node: ID):
         if hasattr(node, 'parent') and isinstance(node.parent, Decl):
             # Handle code generation for declarions on Decl node
             pass
@@ -461,9 +467,6 @@ class CodeGenerator(NodeVisitor):
             node.gen_location = self.new_temp()
             self.current_block.append(
                 (f'load_{node.uc_type.typename}', f'%{node.name}', node.gen_location))
-
-    def visit_BinaryOp(self, node: Node):
-        pass
 
     def visit_UnaryOp(self, node: Node):
         pass
