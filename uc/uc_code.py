@@ -438,14 +438,24 @@ class CodeGenerator(NodeVisitor):
         # First visit the init function to gen the needed code
         self.visit(node.init)
 
-        # Construct the for codition
+        # Necessary labels to perform the for loop
         for_label = self.new_temp_label("for.cond")
+        body_label = self.new_temp_label("for.body")
+        
+        # Construct the for codition
         self.current_block.append((f'{for_label}:',))
+        
         self.visit(node.cond)
+        cond_inst = ("cbranch", node.cond.gen_location, '%' + body_label, '%' + for_label)
+        self.current_block.append(cond_inst)
 
+        # Construct the for body
+        self.current_block.append((f'{body_label}:',))
+        self.visit(node.body)
+                
         print(self.current_block)
         exit()
-
+        
     def visit_While(self, node: Node):
         """
         The generation of While is similar to For except that it does not require the part related to initialization and increment.
@@ -548,7 +558,7 @@ class CodeGenerator(NodeVisitor):
             pass
         elif hasattr(node.scope, "gen_location") and isinstance(node.parent, Assignment):
             # Store the constant value of assignment to a register
-            temp = node.scope.gen_location
+            temp = node.gen_location if hasattr(node, "gen_location") else node.scope.gen_location
             var_type = node.uc_type.typename
             
             self.current_block.append(
@@ -557,10 +567,10 @@ class CodeGenerator(NodeVisitor):
         else:
             # BRUNO TODO: I think that is not the best function to load the
             # the function description in the notebook has no metion about this
-            node.gen_location = node.scope.gen_location
+            node.gen_location = self.new_temp()
 
             # If a global or constant var use @
-            _var_name = f'@{node.name}' if self.is_global(node.name) else f"%{node.name}"  
+            _var_name = f'{node.scope.gen_location}'  
             self.current_block.append(
                 (f"load_{node.uc_type.typename}", _var_name , node.gen_location)
             )
