@@ -84,6 +84,8 @@ class CodeGenerator(NodeVisitor):
             "<": "lt",
             "==": "eq",
             "!": "not",
+            "&&": "and",
+            "||": "or",
         }
 
     def debug_print(self, msg):
@@ -439,22 +441,30 @@ class CodeGenerator(NodeVisitor):
         self.visit(node.init)
 
         # Necessary labels to perform the for loop
-        for_label = self.new_temp_label("for.cond")
+        cond_label = self.new_temp_label("for.cond")
         body_label = self.new_temp_label("for.body")
-        
+        inc_label = self.new_temp_label("for.inc")
+        end_label = self.new_temp_label("for.end")
+
         # Construct the for codition
-        self.current_block.append((f'{for_label}:',))
+        self.current_block.append((f'{cond_label}:',))
         
         self.visit(node.cond)
-        cond_inst = ("cbranch", node.cond.gen_location, '%' + body_label, '%' + for_label)
+        cond_inst = ("cbranch", node.cond.gen_location, '%' + body_label, '%' + end_label)
         self.current_block.append(cond_inst)
 
         # Construct the for body
         self.current_block.append((f'{body_label}:',))
         self.visit(node.body)
-                
-        print(self.current_block)
-        exit()
+        
+        # Construct the for increment
+        self.current_block.append((f'{inc_label}:',))
+        self.visit(node.next)
+        self.current_block.append(('jump', cond_label))
+        
+        # Construct the for end
+        self.current_block.append((f'{end_label}:',))
+        
         
     def visit_While(self, node: Node):
         """
@@ -477,9 +487,17 @@ class CodeGenerator(NodeVisitor):
         # Visit the assignmented value
         self.visit(node.rvalue)
 
-        # Visit the instatieted variable
+        # Is not needed to visit the left side we already
         self.visit(node.lvalue)
 
+        # The following code work if node.lvalue is ID
+        rgen = node.rvalue.gen_location
+        lgen = node.lvalue.scope.gen_location
+        atype = node.lvalue.uc_type.typename
+
+        self.current_block.append(
+                (f'store_{atype}', rgen, lgen) 
+            )
     def visit_Break(self, node: Node):
         """
         Generate a jump instruction to the current exit label.
@@ -511,8 +529,34 @@ class CodeGenerator(NodeVisitor):
         Visit the assert condition. Create the blocks for the condition and adust their predecessors. Generate the branch instruction and adjust the blocks to jump according to the condition. Generate the code for unsuccessful assert, generate the print instruction and the jump instruction to the return block, and successful assert.
         """
         self.visit(node.expr)
+        
+        # Get the expression gen_location
+        egen = node.expr.gen_location
 
-        pass
+        # Next label, for while is only exit
+        next_label = 'exit'
+
+        # Create the assert labels
+        assert_true = self.new_temp_label("assert.true")
+        assert_false = self.new_temp_label("assert.false")
+
+        cbranch_inst = ("cbranch", egen, "%" + assert_true, "%" + assert_false)
+
+        # Create the assert False
+        self.current_block.append((f'{assert_false}:',))
+        str_to_print = self.new_text("str")
+        coord = str(node.expr.coord).split(" ")[1]
+        fail_msg = (f'global_string', str_to_print, f'assertion_fail on {coord}')
+        self.current_block.append(fail_msg)
+        self.current_block.append(("print_string", str_to_print))
+        self.current_block.append(('jump', next_label)) #Todo adjust to the correct block
+
+        # Create the assert True
+        self.current_block.append((f'{assert_true}:',))
+        temp = self.new_temp()
+        self.current_block.append(('literal_int', 0, temp))
+        self.current_block.append(('store_int', temp, "%1"))
+        self.current_block.append(('jump', next_label)) 
 
     def visit_EmptyStatement(self, node: Node):
         pass
@@ -553,17 +597,10 @@ class CodeGenerator(NodeVisitor):
         )
 
     def visit_ID(self, node: ID):
-        if hasattr(node, "parent") and isinstance(node.parent, Decl):
+        if hasattr(node, "parent") and \
+            isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
             # Handle code generation for declarions on Decl node
             pass
-        elif hasattr(node.scope, "gen_location") and isinstance(node.parent, Assignment):
-            # Store the constant value of assignment to a register
-            temp = node.gen_location if hasattr(node, "gen_location") else node.scope.gen_location
-            var_type = node.uc_type.typename
-            
-            self.current_block.append(
-                (f'store_{var_type}', temp, node.name) 
-            )
         else:
             # BRUNO TODO: I think that is not the best function to load the
             # the function description in the notebook has no metion about this
