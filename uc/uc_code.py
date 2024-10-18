@@ -4,8 +4,11 @@ import sys
 from typing import Dict, List, Tuple, Union
 
 from uc.uc_ast import (
+    Assignment,
     Compound,
+    Constant,
     Decl,
+    DeclList,
     ExprList,
     FuncDef,
     Node,
@@ -108,6 +111,18 @@ class CodeGenerator(NodeVisitor):
         self.versions[self.fname] += 1
         return name
 
+    def new_reg(self, name: str) -> str:
+        """
+        Create a new temporary variable of a given scope (function name).
+        """
+        reg_name = "%" + "%s" % (name)
+        if name not in self.versions:
+            self.versions[name] = 2
+            return reg_name
+        reg_name = reg_name + ".%d" % (self.versions[name])
+        self.versions[name] += 1
+        return reg_name
+    
     def current_temp(self) -> str:
         """
         Return the current temporary variable name.
@@ -210,7 +225,7 @@ class CodeGenerator(NodeVisitor):
             return
 
         # Allocate on stack memory
-        _varname = "%" + node.declname.name
+        _varname = self.new_reg(node.declname.name)
         inst = ("alloc_" + node.type.name, _varname)
 
         self.current_block.append(inst)
@@ -370,11 +385,14 @@ class CodeGenerator(NodeVisitor):
         if node.params != None:
             self.visit(node.params)
 
-    def visit_DeclList(self, node: Node):
+    def visit_DeclList(self, node: DeclList):
         """
         Visit all of the declarations that appear inside for statement.
         """
-        pass
+        
+        for decl in node.decls:
+            self.visit(decl)
+
 
     def visit_Type(self, node: Node):
         """
@@ -391,7 +409,7 @@ class CodeGenerator(NodeVisitor):
         then_label = self.new_temp_label("if.then")
         end_label = self.new_temp_label("if.end")
 
-        inst = ("cbranch", node.cond.gen_location, then_label, end_label)
+        inst = ("cbranch", node.cond.gen_location, '%' + then_label, '%' + end_label)
         self.current_block.append(inst)
 
         self.current_block.append((f'{then_label}:',)) 
@@ -409,11 +427,19 @@ class CodeGenerator(NodeVisitor):
         # self.current_block.append(ConditionBlock(then_label))
         # self.current_block.append(ConditionBlock(end_label))
 
-    def visit_For(self, node: Node):
+    def visit_For(self, node: For):
         """
         First, generate the initialization of the For and creates all the blocks required. Then, generate the jump to the condition block and generate the condition and the correct conditional branch. Generate the body of the For followed by the jump to the increment block. Generate the increment and the correct jump.
         """
-        pass
+        
+        # First visit the init function to gen the needed code
+        self.visit(node.init)
+
+        # Init the for instruction
+        for_label = self.new_temp_label("for.cond")
+        self.current_block.append((f'{for_label}:'))
+        print(self.current_block)
+        exit()
 
     def visit_While(self, node: Node):
         """
@@ -428,11 +454,16 @@ class CodeGenerator(NodeVisitor):
         for statment in node.staments:
             self.visit(statment)
 
-    def visit_Assignment(self, node: Node):
+    def visit_Assignment(self, node: Assignment):
         """
         First, visit right side and load the value according to its type. Then, visit the left side and generate the code according to the assignment operator and the type of the expression (ID or ArrayRef).
         """
-        pass
+
+        # Visit the assignmented value
+        self.visit(node.rvalue)
+
+        # Visit the instatieted variable
+        self.visit(node.lvalue)
 
     def visit_Break(self, node: Node):
         """
@@ -491,7 +522,7 @@ class CodeGenerator(NodeVisitor):
         
         self.current_block.append(("jump", "exit"))
 
-    def visit_Constant(self, node: Node):
+    def visit_Constant(self, node: Constant):
         node.gen_location = self.new_temp()
 
         parsed_value = node.value
@@ -510,7 +541,18 @@ class CodeGenerator(NodeVisitor):
         if hasattr(node, "parent") and isinstance(node.parent, Decl):
             # Handle code generation for declarions on Decl node
             pass
+        elif hasattr(node, "parent") and isinstance(node.parent, Assignment):
+            # Store the constant value of assignment to a register
+            _parent_node: Assignment = node.parent
+            temp = _parent_node.rvalue.gen_location
+            var_type = node.uc_type.typename
+            
+            self.current_block.append(
+                (f'store_{var_type}', temp, node.name) 
+            )
         else:
+            # BRUNO TODO: I think that is not the best function to load the
+            # the function description in the notebook has no metion about this
             node.gen_location = self.new_temp()
 
             # If a global or constant var use @

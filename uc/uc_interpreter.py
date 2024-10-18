@@ -465,9 +465,9 @@ class Interpreter:
 
     def run_cbranch(self, expr_test, true_target, false_target):
         if M[self.vars[expr_test]]:
-            self.pc = self.vars[f'%{true_target}']
+            self.pc = self.vars[true_target]
         else:
-            self.pc = self.vars[f'%{false_target}']
+            self.pc = self.vars[false_target]
 
     # Enter the function
     def run_define_int(self, source, args):
