@@ -230,6 +230,7 @@ class CodeGenerator(NodeVisitor):
 
         self.current_block.append(inst)
         node.gen_location = _varname
+        node.declname.scope.gen_location = _varname
 
         # Store optional init val
         _init = node.parent.init
@@ -238,7 +239,7 @@ class CodeGenerator(NodeVisitor):
             inst = (
                 "store_" + node.type.name,
                 _init.gen_location,
-                node.gen_location,
+                node.gen_location ,
             )
             self.current_block.append(inst)
 
@@ -331,9 +332,12 @@ class CodeGenerator(NodeVisitor):
         for _decl in node.decls:
             if not isinstance(_decl, FuncDecl):
                 self.visit(_decl)
-
-                inst = (f"global_{_decl.type.uc_type.typename}", f"@{_decl.name.name}")
-
+                
+                _gen_location = f'@{_decl.name.name}'
+                _id: ID = _decl.name
+                _id.scope.gen_location = _gen_location
+                inst = (f"global_{_decl.type.uc_type.typename}", _gen_location)
+                 
                 if hasattr(_decl, "init"):
                     inst += (_decl.init.value,)
 
@@ -343,7 +347,6 @@ class CodeGenerator(NodeVisitor):
         """
         Visit the type of the node (i.e., VarDecl, FuncDecl, etc.).
         """
-        self.visit(node.name)
         self.visit(node.type)
 
     def visit_ArrayDecl(self, node: Node):
@@ -435,9 +438,11 @@ class CodeGenerator(NodeVisitor):
         # First visit the init function to gen the needed code
         self.visit(node.init)
 
-        # Init the for instruction
+        # Construct the for codition
         for_label = self.new_temp_label("for.cond")
-        self.current_block.append((f'{for_label}:'))
+        self.current_block.append((f'{for_label}:',))
+        self.visit(node.cond)
+
         print(self.current_block)
         exit()
 
@@ -541,10 +546,9 @@ class CodeGenerator(NodeVisitor):
         if hasattr(node, "parent") and isinstance(node.parent, Decl):
             # Handle code generation for declarions on Decl node
             pass
-        elif hasattr(node, "parent") and isinstance(node.parent, Assignment):
+        elif hasattr(node.scope, "gen_location") and isinstance(node.parent, Assignment):
             # Store the constant value of assignment to a register
-            _parent_node: Assignment = node.parent
-            temp = _parent_node.rvalue.gen_location
+            temp = node.scope.gen_location
             var_type = node.uc_type.typename
             
             self.current_block.append(
@@ -553,7 +557,7 @@ class CodeGenerator(NodeVisitor):
         else:
             # BRUNO TODO: I think that is not the best function to load the
             # the function description in the notebook has no metion about this
-            node.gen_location = self.new_temp()
+            node.gen_location = node.scope.gen_location
 
             # If a global or constant var use @
             _var_name = f'@{node.name}' if self.is_global(node.name) else f"%{node.name}"  

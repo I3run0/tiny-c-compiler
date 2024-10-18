@@ -642,7 +642,7 @@ class Visitor(NodeVisitor):
     def visit_ID(self, node):
         entry = self.symtab.lookup(node.name)
         if entry is not None:
-            node.scope = entry.scope
+            node.scope = entry
             node.uc_type = entry.type
         else:
             node.scope = None
