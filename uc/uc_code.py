@@ -311,7 +311,9 @@ class CodeGenerator(NodeVisitor):
                 (f"load_{node.type.uc_type.typename}", self.return_temp, return_var)
             )
             self.current_block.append((f"return_{node.type.uc_type.typename}", return_var))
-
+        else:
+            self.current_block.append((f"return",))
+            
     def visit_ParamList(self, node: ParamList):
         """
         Just visit all arguments.
@@ -541,6 +543,7 @@ class CodeGenerator(NodeVisitor):
         assert_false = self.new_temp_label("assert.false")
 
         cbranch_inst = ("cbranch", egen, "%" + assert_true, "%" + assert_false)
+        self.current_block.append(cbranch_inst)
 
         # Create the assert False
         self.current_block.append((f'{assert_false}:',))
