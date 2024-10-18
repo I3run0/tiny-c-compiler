@@ -45,7 +45,7 @@ class CodeGenerator(NodeVisitor):
     with Basic Blocks & Control Flow Graph.
     """
 
-    def __init__(self, viewcfg: bool, debug_print: bool):
+    def __init__(self, viewcfg: bool, debug_print: bool = False):
         # To debug with debug_print
         self._enable_stdout_debug = debug_print
         self.viewcfg: bool = viewcfg
@@ -388,7 +388,6 @@ class CodeGenerator(NodeVisitor):
         """
         self.visit(node.cond)
 
-        print(node)
         then_label = self.new_temp_label("if.then")
         end_label = self.new_temp_label("if.end")
 
