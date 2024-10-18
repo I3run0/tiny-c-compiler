@@ -86,6 +86,8 @@ class CodeGenerator(NodeVisitor):
             "!": "not",
             "&&": "and",
             "||": "or",
+            ">=": "ge",
+            "<=": "le",
         }
 
     def debug_print(self, msg):
@@ -313,7 +315,7 @@ class CodeGenerator(NodeVisitor):
             self.current_block.append((f"return_{node.type.uc_type.typename}", return_var))
         else:
             self.current_block.append((f"return",))
-            
+
     def visit_ParamList(self, node: ParamList):
         """
         Just visit all arguments.
