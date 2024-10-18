@@ -395,12 +395,13 @@ class CodeGenerator(NodeVisitor):
         inst = ("cbranch", node.cond.gen_location, then_label, end_label)
         self.current_block.append(inst)
 
-        self.current_block.append((f'{then_label}:',))
-        
+        self.current_block.append((f'{then_label}:',)) 
         self.visit(node.iftrue)
-        self.current_block.append(('jump', 'exit'))
+        if node.iffalse != None:
+            self.visit(node.iffalse)
         self.current_block.append((f'{end_label}:',))
         self.current_block.append(('jump', 'exit'))
+        
         # then_block = BasicBlock(self.new_temp_label(then_label))
         # # self.visit(node.iftrue)
 
@@ -475,6 +476,9 @@ class CodeGenerator(NodeVisitor):
         pass
 
     def visit_Return(self, node: Return):
+        '''
+        If there is an expression, you need to visit it, load it if necessary and store its value to the return location. Then generate a jump to the return block if needed. Do not forget to update the predecessor of the return block.
+        '''
         if node.expr is not None:
             self.visit(node.expr)
 
@@ -485,14 +489,8 @@ class CodeGenerator(NodeVisitor):
                     self.return_temp,
                 )
             )
-            self.current_block.append(
-                (
-                    "jump",
-                    "%exit",
-                )
-            )
-        else:
-            self.current_block.append(("return_void",))
+        
+        self.current_block.append(("jump", "exit"))
 
     def visit_Constant(self, node: Node):
         node.gen_location = self.new_temp()

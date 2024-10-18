@@ -465,9 +465,9 @@ class Interpreter:
 
     def run_cbranch(self, expr_test, true_target, false_target):
         if M[self.vars[expr_test]]:
-            self.pc = self.vars[true_target]
+            self.pc = self.vars[f'%{true_target}']
         else:
-            self.pc = self.vars[false_target]
+            self.pc = self.vars[f'%{false_target}']
 
     # Enter the function
     def run_define_int(self, source, args):
@@ -519,7 +519,7 @@ class Interpreter:
     run_get_char_ = run_get_int_
 
     def run_jump(self, target):
-        self.pc = self.vars[target]
+        self.pc = self.vars[f'%{target}']
 
     # load literals into registers
     def run_literal_int(self, value, target):
