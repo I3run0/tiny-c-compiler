@@ -408,6 +408,7 @@ class CodeGenerator(NodeVisitor):
         # Create the necessary labels
         then_label = self.new_temp_label("if.then")
         else_label = self.new_temp_label("if.else")
+        end_label = self.new_temp_label("if.end")
 
         inst = ("cbranch", node.cond.gen_location, '%' + then_label, '%' + else_label)
         self.current_block.append(inst)
@@ -415,13 +416,15 @@ class CodeGenerator(NodeVisitor):
         # Create the if true instruction
         self.current_block.append((f'{then_label}:',)) 
         self.visit(node.iftrue)
+        self.current_block.append(('jump', end_label))
 
         # Create the if False instructions
         self.current_block.append((f'{else_label}:',))
         if node.iffalse != None:
             self.visit(node.iffalse)
 
-        self.current_block.append(('jump', 'exit'))
+        self.current_block.append((f'{end_label}:',))
+
         
         # then_block = BasicBlock(self.new_temp_label(then_label))
         # # self.visit(node.iftrue)
