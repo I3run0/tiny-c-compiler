@@ -558,22 +558,41 @@ class Visitor(NodeVisitor):
         )
         if node.args is not None:
             self.visit(node.args)
-
-            self._assert_semantic(
-                len(node.args.exprs) == len(_uc_type.parameters_type),
-                msg_code=16,
-                name=node.name.name,
-                coord=node.coord
-            )
-
-            for i in range(len(node.args.exprs)):
+        
+            if isinstance(node.args, ExprList):
                 self._assert_semantic(
-                    node.args.exprs[i].uc_type == _uc_type.parameters_type[i],
-                    msg_code=17,
-                    name=node.args.exprs[i].name if hasattr(node.args.exprs[i], 'name')
-                    else None,
-                    coord=node.args.exprs[i].coord
+                    len(node.args.exprs) == len(_uc_type.parameters_type),
+                    msg_code=16,
+                    name=node.name.name,
+                    coord=node.coord
                 )
+
+                for i in range(len(node.args.exprs)):
+                    self._assert_semantic(
+                        node.args.exprs[i].uc_type == _uc_type.parameters_type[i],
+                        msg_code=17,
+                        name=node.args.exprs[i].name if hasattr(node.args.exprs[i], 'name')
+                        else None,
+                        coord=node.args.exprs[i].coord
+                    )
+
+            elif isinstance(node.args, ID):
+                self._assert_semantic(
+                    1 == len(_uc_type.parameters_type),
+                    msg_code=16,
+                    name=node.name.name,
+                    coord=node.coord
+                )
+
+                self._assert_semantic(
+                    node.args.uc_type == _uc_type.parameters_type[0],
+                    msg_code=17,
+                    name=node.args.name,
+                    coord=node.args.coord
+                )
+
+
+
 
         node.uc_type = _uc_type.return_type
 
