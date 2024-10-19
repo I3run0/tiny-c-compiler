@@ -401,19 +401,26 @@ class CodeGenerator(NodeVisitor):
         """
         First, generate the evaluation of the condition (visit it). Create the required blocks and the branch for the condition. Move to the first block and generate the statement related to the then, create the branch to exit. In case, there is an else block, generate it in a similar way.
         """
+
+        # Visit to create the gen_location
         self.visit(node.cond)
 
+        # Create the necessary labels
         then_label = self.new_temp_label("if.then")
-        end_label = self.new_temp_label("if.end")
+        else_label = self.new_temp_label("if.else")
 
-        inst = ("cbranch", node.cond.gen_location, '%' + then_label, '%' + end_label)
+        inst = ("cbranch", node.cond.gen_location, '%' + then_label, '%' + else_label)
         self.current_block.append(inst)
 
+        # Create the if true instruction
         self.current_block.append((f'{then_label}:',)) 
         self.visit(node.iftrue)
+
+        # Create the if False instructions
+        self.current_block.append((f'{else_label}:',))
         if node.iffalse != None:
             self.visit(node.iffalse)
-        self.current_block.append((f'{end_label}:',))
+
         self.current_block.append(('jump', 'exit'))
         
         # then_block = BasicBlock(self.new_temp_label(then_label))
@@ -503,7 +510,7 @@ class CodeGenerator(NodeVisitor):
 
         # The following code work if node.lvalue is ID
         # TODO: check if have a better approach to the following code
-        
+
         rgen = node.rvalue.scope.gen_location \
             if isinstance(node.rvalue, ID) \
               else node.rvalue.gen_location
