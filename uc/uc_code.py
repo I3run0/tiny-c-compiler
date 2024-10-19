@@ -561,7 +561,7 @@ class CodeGenerator(NodeVisitor):
         temp = self.new_temp()
         self.current_block.append(('literal_int', 0, temp))
         self.current_block.append(('store_int', temp, "%1"))
-        self.current_block.append(('jump', next_label)) 
+        #self.current_block.append(('jump', next_label)) 
 
     def visit_EmptyStatement(self, node: Node):
         pass
