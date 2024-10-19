@@ -161,7 +161,17 @@ class CodeGenerator(NodeVisitor):
             if varname in glb:
                 return True
         return False
+
     
+    def parse_literral_values(self, value, vtype: str):
+        '''
+        Parse a literral value from string to bool, int . etc
+        '''
+        if vtype == "int":
+            return int(value)
+        elif vtype == "bool":
+            return bool(value)
+            
     def visit_BinaryOp(self, node: BinaryOp):
         # Visit the left and right expressions
         if not isinstance(node.rvalue, BinaryOp) and not isinstance(
@@ -302,7 +312,7 @@ class CodeGenerator(NodeVisitor):
             )
             self.current_block.append((f"return_{node.type.uc_type.typename}", return_var))
         else:
-            self.current_block.append((f"return",))
+            self.current_block.append((f"return_void",))
 
     def visit_ParamList(self, node: ParamList):
         """
@@ -327,13 +337,15 @@ class CodeGenerator(NodeVisitor):
             if not isinstance(_decl, FuncDecl):
                 self.visit(_decl)
                 
-                _gen_location = f'@{_decl.name.name}'
+                gen_location = f'@{_decl.name.name}'
                 _id: ID = _decl.name
-                _id.scope.gen_location = _gen_location
-                inst = (f"global_{_decl.type.uc_type.typename}", _gen_location)
+                _id.scope.gen_location = gen_location
+                var_type = _decl.type.uc_type.typename
+                inst = (f"global_{var_type}", gen_location)
                  
                 if hasattr(_decl, "init"):
-                    inst += (_decl.init.value,)
+                    parsed_value = self.parse_literral_values(_decl.init.value, var_type)
+                    inst += (parsed_value,)
 
                 self.text.append(inst)
 
@@ -514,11 +526,8 @@ class CodeGenerator(NodeVisitor):
         # The following code work if node.lvalue is ID
         # TODO: check if have a better approach to the following code
 
-        rgen = node.rvalue.scope.gen_location \
-            if isinstance(node.rvalue, ID) \
-              else node.rvalue.gen_location
-        
-        lgen = node.lvalue.scope.gen_location
+        rgen = node.rvalue.gen_location
+        lgen = node.lvalue.gen_location
         atype = node.lvalue.uc_type.typename
 
         self.current_block.append(
@@ -534,13 +543,20 @@ class CodeGenerator(NodeVisitor):
         """
         Start by generating the code for the arguments: for each one of them, visit the expression and generate a param_type instruction with its value. Then, allocate a temporary for the return value and generate the code to call the function.
         """
+        if isinstance(node.args, ExprList):
+            for expr in node.args.exprs:
+                self.visit(expr)
 
-        for expr in node.args.exprs:
-            self.visit(expr)
-
-        for expr in node.args.exprs:
+            for expr in node.args.exprs:
+                self.current_block.append(
+                    (f"param_{expr.uc_type.typename}", expr.gen_location)
+                )
+        else:
+            # This is the node ID case
+            node_id: ID = node.args
+            self.visit(node_id)
             self.current_block.append(
-                (f"param_{expr.uc_type.typename}", expr.gen_location)
+                (f"param_{node_id.uc_type.typename}", node_id.gen_location)
             )
 
         node.gen_location = self.new_temp()
@@ -622,13 +638,8 @@ class CodeGenerator(NodeVisitor):
 
         else:
             _target = self.new_temp()
-            parsed_value = node.value
-
-            if node.uc_type.typename == "int":
-                parsed_value = int(parsed_value)
-            elif node.uc_type.typename == "bool":
-                parsed_value = bool(parsed_value)
-
+            parsed_value = self.parse_literral_values(node.value, node.uc_type.typename)
+        
             self.current_block.append(
                 (f"literal_{node.uc_type.typename}", parsed_value, _target)
             )
@@ -640,12 +651,11 @@ class CodeGenerator(NodeVisitor):
         if hasattr(node, "parent") and \
             isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
             # Handle code generation for declarions on Decl node
-            pass
+            node.gen_location = node.scope.gen_location
         else:
             # BRUNO TODO: I think that is not the best function to load the
             # the function description in the notebook has no metion about this
             node.gen_location = self.new_temp()
-
             # If a global or constant var use @
             _var_name = f'{node.scope.gen_location}'  
             self.current_block.append(
