@@ -208,15 +208,23 @@ class CodeGenerator(NodeVisitor):
         # Store location of the result on the node
         node.gen_location = target
 
-    def visit_Print(self, node: Node):
+    def visit_Print(self, node: Print):
         # Visit the expression
-        self.visit(node.expr)
+        if isinstance(node.expr, ExprList):
+            exprs: ExprList = node.expr
+            for expr in exprs.exprs:
+                self.visit(expr)
+                inst = ("print_" + expr.uc_type.typename, expr.gen_location)
+                self.current_block.append(inst)
 
-        # TODO: Load the location containing the expression
+        else:
+            self.visit(node.expr)
 
-        # Create the opcode and append to list
-        inst = ("print_" + node.expr.uc_type.typename, node.expr.gen_location)
-        self.current_block.append(inst)
+            # TODO: Load the location containing the expression
+
+            # Create the opcode and append to list
+            inst = ("print_" + node.expr.uc_type.typename, node.expr.gen_location)
+            self.current_block.append(inst)
 
         # TODO: Handle the cases when node.expr is None or ExprList
 
@@ -552,7 +560,7 @@ class CodeGenerator(NodeVisitor):
         str_to_print = self.new_text("str")
         coord = str(node.expr.coord).split(" ")[1]
         fail_msg = (f'global_string', str_to_print, f'assertion_fail on {coord}')
-        self.current_block.append(fail_msg)
+        self.text.append(fail_msg)
         self.current_block.append(("print_string", str_to_print))
         self.current_block.append(('jump', next_label)) #Todo adjust to the correct block
 
@@ -587,19 +595,27 @@ class CodeGenerator(NodeVisitor):
         self.current_block.append(("jump", "exit"))
 
     def visit_Constant(self, node: Constant):
-        node.gen_location = self.new_temp()
 
-        parsed_value = node.value
         if node.uc_type.typename == "string":
-            parsed_value = f"@.str.{parsed_value}"
-        elif node.uc_type.typename == "int":
-            parsed_value = int(parsed_value)
-        elif node.uc_type.typename == "bool":
-            parsed_value = bool(parsed_value)
+            _target = self.new_text("str")
+            inst = ("global_string", _target, node.value)
+            self.text.append(inst)
 
-        self.current_block.append(
-            (f"literal_{node.uc_type.typename}", parsed_value, node.gen_location)
-        )
+        else:
+            _target = self.new_temp()
+            parsed_value = node.value
+
+            if node.uc_type.typename == "int":
+                parsed_value = int(parsed_value)
+            elif node.uc_type.typename == "bool":
+                parsed_value = bool(parsed_value)
+
+            self.current_block.append(
+                (f"literal_{node.uc_type.typename}", parsed_value, _target)
+            )
+        
+        node.gen_location = _target
+
 
     def visit_ID(self, node: ID):
         if hasattr(node, "parent") and \
