@@ -502,7 +502,12 @@ class CodeGenerator(NodeVisitor):
         self.visit(node.lvalue)
 
         # The following code work if node.lvalue is ID
-        rgen = node.rvalue.gen_location
+        # TODO: check if have a better approach to the following code
+        
+        rgen = node.rvalue.scope.gen_location \
+            if isinstance(node.rvalue, ID) \
+              else node.rvalue.gen_location
+        
         lgen = node.lvalue.scope.gen_location
         atype = node.lvalue.uc_type.typename
 
