@@ -88,6 +88,7 @@ class CodeGenerator(NodeVisitor):
             "||": "or",
             ">=": "ge",
             "<=": "le",
+            "!=": "ne",
         }
 
     def debug_print(self, msg):
@@ -161,27 +162,6 @@ class CodeGenerator(NodeVisitor):
                 return True
         return False
     
-    # You must implement visit_Nodename methods for all of the other
-    # AST nodes.  In your code, you will need to make instructions
-    # and append them to the current block code list.
-    #
-    # A few sample methods follow. Do not hesitate to complete or change
-    # them if needed.
-
-    def visit_Constant(self, node: Node):
-        if hasattr(node.type, "name") and node.type.name == "string":
-            _target = self.new_text("str")
-            inst = ("global_string", _target, node.value)
-            self.text.append(inst)
-        else:
-            # Create a new temporary variable name
-            _target = self.new_temp()
-            # Make the SSA opcode and append to list of generated instructions
-            inst = ("literal_" + node.type, node.value, _target)
-            self.current_block.append(inst)
-        # Save the name of the temporary variable where the value was placed
-        node.gen_location = _target
-
     def visit_BinaryOp(self, node: BinaryOp):
         # Visit the left and right expressions
         if not isinstance(node.rvalue, BinaryOp) and not isinstance(
@@ -478,11 +458,30 @@ class CodeGenerator(NodeVisitor):
         self.current_block.append((f'{end_label}:',))
         
         
-    def visit_While(self, node: Node):
+    def visit_While(self, node: While):
         """
         The generation of While is similar to For except that it does not require the part related to initialization and increment.
         """
-        pass
+
+        # Necessary labels to perform the for loop
+        cond_label = self.new_temp_label("while.cond")
+        body_label = self.new_temp_label("while.body")
+        end_label = self.new_temp_label("while.end")
+        
+        # Construct the for codition
+        self.current_block.append((f'{cond_label}:',))
+        
+        self.visit(node.cond)
+        cond_inst = ("cbranch", node.cond.gen_location, '%' + body_label, '%' + end_label)
+        self.current_block.append(cond_inst)
+
+        # Construct the for body
+        self.current_block.append((f'{body_label}:',))
+        self.visit(node.body)
+        self.current_block.append(('jump', cond_label))
+        
+        # Construct the for end
+        self.current_block.append((f'{end_label}:',))
 
     def visit_Compound(self, node: Compound):
         """
@@ -595,7 +594,12 @@ class CodeGenerator(NodeVisitor):
         self.current_block.append(("jump", "exit"))
 
     def visit_Constant(self, node: Constant):
+        '''
+        If the constant is of type string, create a new global that will contain the value. Otherwise just create a new temporary initialized with the value.
+        '''
 
+        # In the case for string is only need to create
+        # a global variable in the text region
         if node.uc_type.typename == "string":
             _target = self.new_text("str")
             inst = ("global_string", _target, node.value)
