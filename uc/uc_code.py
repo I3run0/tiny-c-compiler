@@ -163,7 +163,7 @@ class CodeGenerator(NodeVisitor):
                 return True
         return False
 
-    def parse_literral_values(self, value, vtype: str):
+    def parse_literal_values(self, value, vtype: str):
         '''
         Parse a literral value from string to bool, int . etc
         '''
@@ -348,7 +348,7 @@ class CodeGenerator(NodeVisitor):
                 inst = (f"global_{var_type}", gen_location)
 
                 if hasattr(_decl, "init"):
-                    parsed_value = self.parse_literral_values(
+                    parsed_value = self.parse_literal_values(
                         _decl.init.value, var_type)
                     inst += (parsed_value,)
 
@@ -648,7 +648,7 @@ class CodeGenerator(NodeVisitor):
 
         else:
             _target = self.new_temp()
-            parsed_value = self.parse_literral_values(
+            parsed_value = self.parse_literal_values(
                 node.value, node.uc_type.typename)
 
             self.current_block.append(
