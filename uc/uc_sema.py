@@ -51,6 +51,7 @@ from uc.uc_type import (
 
 ENABLE_STDOUT_DEBUG = False
 
+
 def node_to_debug_string(node):
     if ENABLE_STDOUT_DEBUG:
         clone = deepcopy(node)
@@ -181,7 +182,6 @@ class NodeVisitor:
             if hasattr(clone, "parent"):
                 delattr(clone, "parent")
             print(f"Visiting {clone}", file=sys.stdout)
-
 
 
 class Visitor(NodeVisitor):
@@ -353,23 +353,26 @@ class Visitor(NodeVisitor):
                                     node.name.coord)
                             else:  # node.init is Constant(type=string)
                                 self._assert_semantic(
-                                    len(init_node.value) == array_node.uc_type.size, 9,
-                                    name=node.name.name, coord=node.name.coord)
+                                    (array_node.uc_type.size is None) or
+                                    (len(init_node.value) ==
+                                     array_node.uc_type.size),
+                                    9, name=node.name.name, coord=node.name.coord)
 
-                        for _expr in init_node.exprs:
-                            if not isinstance(array_node.type, ArrayDecl):
-                                self._assert_semantic(
-                                    _expr.uc_type == array_node.type.uc_type, 10,
-                                    id.coord, name=id.name)
+                        if type(init_node) == InitList:
+                            for _expr in init_node.exprs:
+                                if not isinstance(array_node.type, ArrayDecl):
+                                    self._assert_semantic(
+                                        _expr.uc_type == array_node.type.uc_type, 10,
+                                        id.coord, name=id.name)
 
-                                # If the current array element type isn't an array,
-                                # all initialization elements must be constants
-                                self._assert_semantic(
-                                    isinstance(_expr, Constant), 19,
-                                    name=id.name, coord=_expr.coord)
-                            else:
-                                assert_init_list_size_matches_array_dimension(
-                                    id, array_node.type, _expr)
+                                    # If the current array element type isn't an array,
+                                    # all initialization elements must be constants
+                                    self._assert_semantic(
+                                        isinstance(_expr, Constant), 19,
+                                        name=id.name, coord=_expr.coord)
+                                else:
+                                    assert_init_list_size_matches_array_dimension(
+                                        id, array_node.type, _expr)
 
                 assert_init_list_size_matches_array_dimension(
                     node.name, node.type, node.init)
@@ -558,7 +561,7 @@ class Visitor(NodeVisitor):
         )
         if node.args is not None:
             self.visit(node.args)
-        
+
             if isinstance(node.args, ExprList):
                 self._assert_semantic(
                     len(node.args.exprs) == len(_uc_type.parameters_type),
@@ -590,9 +593,6 @@ class Visitor(NodeVisitor):
                     name=node.args.name,
                     coord=node.args.coord
                 )
-
-
-
 
         node.uc_type = _uc_type.return_type
 

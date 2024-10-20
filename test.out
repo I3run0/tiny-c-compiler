@@ -10,116 +10,7 @@ tests/test_code.py ...................FFFFFF                             [100%]
 ________________________________ test_code[t20] ________________________________
 
 test_name = 't20'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63af18a0>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
->           sema.visit(ast)
-
-tests/test_code.py:70: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_sema.py:243: in visit_Program
-    self.visit(_decl)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_sema.py:283: in visit_FuncDef
-    self.visit(node.body)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_sema.py:502: in visit_Compound
-    self.visit(_stament)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_sema.py:374: in visit_Decl
-    assert_init_list_size_matches_array_dimension(
-uc/uc_sema.py:355: in assert_init_list_size_matches_array_dimension
-    self._assert_semantic(
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <uc.uc_sema.Visitor object at 0x7fcf63af3010>, condition = False
-msg_code = 9, coord = <uc.uc_parser.Coord object at 0x7fcf63e353c0>, name = 's'
-ltype = '', rtype = ''
-
-    def _assert_semantic(self, condition: bool, msg_code: int, coord, name: str = "", ltype="", rtype=""):
-        """Check condition, if false print selected error message and exit"""
-        error_msgs = {
-            1: f"{name} is not defined",
-            2: f"subscript must be of type(int), not {ltype}",
-            3: "Expression must be of type(bool)",
-            4: f"Cannot assign {rtype} to {ltype}",
-            5: f"Binary operator {name} does not have matching LHS/RHS types",
-            6: f"Binary operator {name} is not supported by {ltype}",
-            7: "Break statement must be inside a loop",
-            8: "Array dimension mismatch",
-            9: f"Size mismatch on {name} initialization",
-            10: f"{name} initialization type mismatch",
-            11: f"{name} initialization must be a single element",
-            12: "Lists have different sizes",
-            13: "List & variable have different sizes",
-            14: f"conditional expression is {ltype}, not type(bool)",
-            15: f"{name} is not a function",
-            16: f"no. arguments to call {name} function mismatch",
-            17: f"Type mismatch with parameter {name}",
-            18: "The condition expression must be of type(bool)",
-            19: "Expression must be a constant",
-            20: "Expression is not of basic type",
-            21: f"{name} does not reference a variable of basic type",
-            22: f"{name} is not a variable",
-            23: f"Return of {ltype} is incompatible with {rtype} function definition",
-            24: f"Name {name} is already defined in this scope",
-            25: f"Unary operator {name} is not supported",
-        }
-        if not condition:
-            msg = error_msgs[msg_code]  # invalid msg_code raises Exception
-            print("SemanticError: %s %s" % (msg, coord), file=sys.stdout)
->           sys.exit(1)
-E           SystemExit: 1
-
-uc/uc_sema.py:238: SystemExit
------------------------------ Captured stdout call -----------------------------
-SemanticError: Size mismatch on s initialization @ 4:10
-________________________________ test_code[t21] ________________________________
-
-test_name = 't21'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcf64000f10>
+capsys = <_pytest.capture.CaptureFixture object at 0x7f63ea1e2650>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -165,15 +56,108 @@ capsys = <_pytest.capture.CaptureFixture object at 0x7fcf64000f10>
 
 tests/test_code.py:72: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:256: in visit_Program
     self.visit(_decl)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
+    return visitor(node)
+uc/uc_code.py:304: in visit_FuncDef
+    self.visit(node.body)
+uc/uc_sema.py:164: in visit
+    return visitor(node)
+uc/uc_code.py:519: in visit_Compound
+    self.visit(statment)
+uc/uc_sema.py:164: in visit
+    return visitor(node)
+uc/uc_code.py:207: in visit_Print
+    self.visit(expr)
+uc/uc_sema.py:164: in visit
+    return visitor(node)
+uc/uc_sema.py:171: in generic_visit
+    self.visit(child)
+uc/uc_sema.py:164: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7fcf63a8e560>
+self = <uc.uc_code.CodeGenerator object at 0x7f63ea1e2c20>
+node = ID(name=s,
+   scope=<uc.uc_sema.SymbolTableEntry object at 0x7f63ea4f5840>,
+   uc_type=type(Array<char>),
+   gen_location=%4)
+
+    def visit_ID(self, node: ID):
+        if hasattr(node, "parent") and \
+                isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
+            # Handle code generation for declarions on Decl node
+            node.gen_location = node.scope.gen_location
+        else:
+            # BRUNO TODO: I think that is not the best function to load the
+            # the function description in the notebook has no metion about this
+            node.gen_location = self.new_temp()
+            # If a global or constant var use @
+>           _var_name = f'{node.scope.gen_location}'
+E           AttributeError: 'SymbolTableEntry' object has no attribute 'gen_location'
+
+uc/uc_code.py:670: AttributeError
+________________________________ test_code[t21] ________________________________
+
+test_name = 't21'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f63ea1fe470>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:164: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:164: in visit
+    return visitor(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f63ea1c0910>
 node = GlobalDecl(decls=[Decl(name=ID(name=v,
                                scope=<uc.uc_sema.SymbolTableEntry object at 0x7...                                ],
                                      uc_type=type(Array<int>))),
@@ -202,7 +186,7 @@ uc/uc_code.py:352: AttributeError
 ________________________________ test_code[t22] ________________________________
 
 test_name = 't22'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63d01ea0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7f63ea18a2f0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -248,15 +232,15 @@ capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63d01ea0>
 
 tests/test_code.py:72: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:256: in visit_Program
     self.visit(_decl)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7fcf63a8e5c0>
+self = <uc.uc_code.CodeGenerator object at 0x7f63ea4f4940>
 node = GlobalDecl(decls=[Decl(name=ID(name=arr,
                                scope=<uc.uc_sema.SymbolTableEntry object at 0...                                ],
                                      uc_type=type(Array<int>))),
@@ -285,7 +269,7 @@ uc/uc_code.py:352: AttributeError
 ________________________________ test_code[t23] ________________________________
 
 test_name = 't23'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63af32b0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7f63ea189750>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -331,37 +315,37 @@ capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63af32b0>
 
 tests/test_code.py:72: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:256: in visit_Program
     self.visit(_decl)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:304: in visit_FuncDef
     self.visit(node.body)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:519: in visit_Compound
     self.visit(statment)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:212: in visit_Print
     self.visit(node.expr)
-uc/uc_sema.py:162: in visit
+uc/uc_sema.py:163: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7fcf63b4ada0>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7f63ea252cb0>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
 E       AttributeError: 'NoneType' object has no attribute 'children'
 
-uc/uc_sema.py:173: AttributeError
+uc/uc_sema.py:174: AttributeError
 ________________________________ test_code[t24] ________________________________
 
 test_name = 't24'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63a71db0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7f63ea5a9c90>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -407,37 +391,37 @@ capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63a71db0>
 
 tests/test_code.py:72: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:256: in visit_Program
     self.visit(_decl)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:304: in visit_FuncDef
     self.visit(node.body)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:519: in visit_Compound
     self.visit(statment)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:212: in visit_Print
     self.visit(node.expr)
-uc/uc_sema.py:162: in visit
+uc/uc_sema.py:163: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7fcf63a50580>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7f63ea260a00>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
 E       AttributeError: 'NoneType' object has no attribute 'children'
 
-uc/uc_sema.py:173: AttributeError
+uc/uc_sema.py:174: AttributeError
 ________________________________ test_code[t25] ________________________________
 
 test_name = 't25'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63a9d660>
+capsys = <_pytest.capture.CaptureFixture object at 0x7f63ea5a8520>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -483,38 +467,38 @@ capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63a9d660>
 
 tests/test_code.py:72: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:256: in visit_Program
     self.visit(_decl)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:304: in visit_FuncDef
     self.visit(node.body)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:519: in visit_Compound
     self.visit(statment)
-uc/uc_sema.py:163: in visit
+uc/uc_sema.py:164: in visit
     return visitor(node)
 uc/uc_code.py:212: in visit_Print
     self.visit(node.expr)
-uc/uc_sema.py:162: in visit
+uc/uc_sema.py:163: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7fcf63a59a80>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7f63ea159e70>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
 E       AttributeError: 'NoneType' object has no attribute 'children'
 
-uc/uc_sema.py:173: AttributeError
+uc/uc_sema.py:174: AttributeError
 =========================== short test summary info ============================
-FAILED tests/test_code.py::test_code[t20] - SystemExit: 1
+FAILED tests/test_code.py::test_code[t20] - AttributeError: 'SymbolTableEntry...
 FAILED tests/test_code.py::test_code[t21] - AttributeError: 'InitList' object...
 FAILED tests/test_code.py::test_code[t22] - AttributeError: 'InitList' object...
 FAILED tests/test_code.py::test_code[t23] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t24] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t25] - AttributeError: 'NoneType' object...
-======================== 6 failed, 19 passed in 13.11s =========================
+======================== 6 failed, 19 passed in 13.05s =========================
