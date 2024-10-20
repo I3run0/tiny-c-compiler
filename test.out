@@ -4,286 +4,13 @@ rootdir: /workspaces/university-mc921/p4-codegen-217787_233539
 configfile: pyproject.toml
 collected 25 items
 
-tests/test_code.py ..............F..FFFFFFFF                             [100%]
+tests/test_code.py ...................FFFFFF                             [100%]
 
 =================================== FAILURES ===================================
-________________________________ test_code[t15] ________________________________
-
-test_name = 't15'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa4db70>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
-            sema.visit(ast)
-            gen = CodeGenerator(False)
->           gen.visit(ast)
-
-tests/test_code.py:72: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:256: in visit_Program
-    self.visit(_decl)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:342: in visit_GlobalDecl
-    self.visit(_decl)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:361: in visit_Decl
-    self.visit(node.type)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <uc.uc_code.CodeGenerator object at 0x7efedfa4c2e0>
-node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=a,
-                                               scope=<uc.uc_sem...                uc_type=type(int)),
-         declname=ID(name=find_lcm),
-         uc_type=type(int Function(int, int)))
-
-    def visit_FuncDecl(self, node: Node):
-        """
-        Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
-        """
-        # Generate Function Definition
-        _func_sig: VarDecl = node.type
-        _func_param_types = node.uc_type.parameters_type
-        self.parameters_temp = [self.new_temp()
-                                for _ in range(len(_func_param_types))]
-        func_definition = (
-            f"define_{_func_sig.type.name}",
->           f"@{_func_sig.declname.name}",
-            [
-                (_func_param_types[i].typename, self.parameters_temp[i])
-                for i in range(len(_func_param_types))
-            ],
-        )
-E       AttributeError: 'NoneType' object has no attribute 'name'
-
-uc/uc_code.py:380: AttributeError
-________________________________ test_code[t18] ________________________________
-
-test_name = 't18'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedf9d3280>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
-            sema.visit(ast)
-            gen = CodeGenerator(False)
->           gen.visit(ast)
-
-tests/test_code.py:72: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:256: in visit_Program
-    self.visit(_decl)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:342: in visit_GlobalDecl
-    self.visit(_decl)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:361: in visit_Decl
-    self.visit(node.type)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <uc.uc_code.CodeGenerator object at 0x7efedfa9f9a0>
-node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=n,
-                                               scope=<uc.uc_sem...                   uc_type=type(int)),
-         declname=ID(name=checkPrime),
-         uc_type=type(int Function(int)))
-
-    def visit_FuncDecl(self, node: Node):
-        """
-        Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
-        """
-        # Generate Function Definition
-        _func_sig: VarDecl = node.type
-        _func_param_types = node.uc_type.parameters_type
-        self.parameters_temp = [self.new_temp()
-                                for _ in range(len(_func_param_types))]
-        func_definition = (
-            f"define_{_func_sig.type.name}",
->           f"@{_func_sig.declname.name}",
-            [
-                (_func_param_types[i].typename, self.parameters_temp[i])
-                for i in range(len(_func_param_types))
-            ],
-        )
-E       AttributeError: 'NoneType' object has no attribute 'name'
-
-uc/uc_code.py:380: AttributeError
-________________________________ test_code[t19] ________________________________
-
-test_name = 't19'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedfc6e560>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
-            sema.visit(ast)
-            gen = CodeGenerator(False)
->           gen.visit(ast)
-
-tests/test_code.py:72: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:256: in visit_Program
-    self.visit(_decl)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:342: in visit_GlobalDecl
-    self.visit(_decl)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-uc/uc_code.py:361: in visit_Decl
-    self.visit(node.type)
-uc/uc_sema.py:163: in visit
-    return visitor(node)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <uc.uc_code.CodeGenerator object at 0x7efedfa9c400>
-node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=n,
-                                               scope=<uc.uc_sem...                   uc_type=type(int)),
-         declname=ID(name=checkPrime),
-         uc_type=type(int Function(int)))
-
-    def visit_FuncDecl(self, node: Node):
-        """
-        Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
-        """
-        # Generate Function Definition
-        _func_sig: VarDecl = node.type
-        _func_param_types = node.uc_type.parameters_type
-        self.parameters_temp = [self.new_temp()
-                                for _ in range(len(_func_param_types))]
-        func_definition = (
-            f"define_{_func_sig.type.name}",
->           f"@{_func_sig.declname.name}",
-            [
-                (_func_param_types[i].typename, self.parameters_temp[i])
-                for i in range(len(_func_param_types))
-            ],
-        )
-E       AttributeError: 'NoneType' object has no attribute 'name'
-
-uc/uc_code.py:380: AttributeError
 ________________________________ test_code[t20] ________________________________
 
 test_name = 't20'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa698a0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63af18a0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -347,8 +74,8 @@ uc/uc_sema.py:355: in assert_init_list_size_matches_array_dimension
     self._assert_semantic(
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_sema.Visitor object at 0x7efedfa69e70>, condition = False
-msg_code = 9, coord = <uc.uc_parser.Coord object at 0x7efedfa6b880>, name = 's'
+self = <uc.uc_sema.Visitor object at 0x7fcf63af3010>, condition = False
+msg_code = 9, coord = <uc.uc_parser.Coord object at 0x7fcf63e353c0>, name = 's'
 ltype = '', rtype = ''
 
     def _assert_semantic(self, condition: bool, msg_code: int, coord, name: str = "", ltype="", rtype=""):
@@ -392,7 +119,7 @@ SemanticError: Size mismatch on s initialization @ 4:10
 ________________________________ test_code[t21] ________________________________
 
 test_name = 't21'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa4ceb0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7fcf64000f10>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -446,7 +173,7 @@ uc/uc_sema.py:163: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7efedfda1030>
+self = <uc.uc_code.CodeGenerator object at 0x7fcf63a8e560>
 node = GlobalDecl(decls=[Decl(name=ID(name=v,
                                scope=<uc.uc_sema.SymbolTableEntry object at 0x7...                                ],
                                      uc_type=type(Array<int>))),
@@ -457,7 +184,7 @@ node = GlobalDecl(decls=[Decl(name=ID(name=v,
         Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
         """
         for _decl in node.decls:
-            if not isinstance(_decl, FuncDecl):
+            if not isinstance(_decl, FuncDecl) and not isinstance(_decl.type, FuncDecl):
                 self.visit(_decl)
     
                 gen_location = f'@{_decl.name.name}'
@@ -475,7 +202,7 @@ uc/uc_code.py:352: AttributeError
 ________________________________ test_code[t22] ________________________________
 
 test_name = 't22'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedfe05a80>
+capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63d01ea0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -529,7 +256,7 @@ uc/uc_sema.py:163: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7efedfaa9cf0>
+self = <uc.uc_code.CodeGenerator object at 0x7fcf63a8e5c0>
 node = GlobalDecl(decls=[Decl(name=ID(name=arr,
                                scope=<uc.uc_sema.SymbolTableEntry object at 0...                                ],
                                      uc_type=type(Array<int>))),
@@ -540,7 +267,7 @@ node = GlobalDecl(decls=[Decl(name=ID(name=arr,
         Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
         """
         for _decl in node.decls:
-            if not isinstance(_decl, FuncDecl):
+            if not isinstance(_decl, FuncDecl) and not isinstance(_decl.type, FuncDecl):
                 self.visit(_decl)
     
                 gen_location = f'@{_decl.name.name}'
@@ -558,7 +285,7 @@ uc/uc_code.py:352: AttributeError
 ________________________________ test_code[t23] ________________________________
 
 test_name = 't23'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa68b80>
+capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63af32b0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -624,7 +351,7 @@ uc/uc_sema.py:162: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7efedfaa71c0>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7fcf63b4ada0>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
@@ -634,7 +361,7 @@ uc/uc_sema.py:173: AttributeError
 ________________________________ test_code[t24] ________________________________
 
 test_name = 't24'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efedf9d16c0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63a71db0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -700,7 +427,7 @@ uc/uc_sema.py:162: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7efedf8f17e0>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7fcf63a50580>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
@@ -710,7 +437,7 @@ uc/uc_sema.py:173: AttributeError
 ________________________________ test_code[t25] ________________________________
 
 test_name = 't25'
-capsys = <_pytest.capture.CaptureFixture object at 0x7efee00f1660>
+capsys = <_pytest.capture.CaptureFixture object at 0x7fcf63a9d660>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -776,7 +503,7 @@ uc/uc_sema.py:162: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7efedfa69f60>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7fcf63a59a80>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
@@ -784,13 +511,10 @@ E       AttributeError: 'NoneType' object has no attribute 'children'
 
 uc/uc_sema.py:173: AttributeError
 =========================== short test summary info ============================
-FAILED tests/test_code.py::test_code[t15] - AttributeError: 'NoneType' object...
-FAILED tests/test_code.py::test_code[t18] - AttributeError: 'NoneType' object...
-FAILED tests/test_code.py::test_code[t19] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t20] - SystemExit: 1
 FAILED tests/test_code.py::test_code[t21] - AttributeError: 'InitList' object...
 FAILED tests/test_code.py::test_code[t22] - AttributeError: 'InitList' object...
 FAILED tests/test_code.py::test_code[t23] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t24] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t25] - AttributeError: 'NoneType' object...
-========================= 9 failed, 16 passed in 0.83s =========================
+======================== 6 failed, 19 passed in 13.11s =========================

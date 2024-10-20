@@ -338,7 +338,7 @@ class CodeGenerator(NodeVisitor):
         Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
         """
         for _decl in node.decls:
-            if not isinstance(_decl, FuncDecl):
+            if not isinstance(_decl, FuncDecl) and not isinstance(_decl.type, FuncDecl):
                 self.visit(_decl)
 
                 gen_location = f'@{_decl.name.name}'
@@ -377,7 +377,7 @@ class CodeGenerator(NodeVisitor):
                                 for _ in range(len(_func_param_types))]
         func_definition = (
             f"define_{_func_sig.type.name}",
-            f"@{_func_sig.declname.name}",
+            f"@{node.declname.name}",
             [
                 (_func_param_types[i].typename, self.parameters_temp[i])
                 for i in range(len(_func_param_types))
