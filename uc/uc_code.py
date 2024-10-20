@@ -805,7 +805,8 @@ class CodeGenerator(NodeVisitor):
         if hasattr(node, "parent") and \
                 isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
             # Handle code generation for declarions on Decl node
-            pass
+            # pass
+            node.gen_location = node.scope.gen_location
         else:
             # BRUNO TODO: I think that is not the best function to load the
             # the function description in the notebook has no metion about this
