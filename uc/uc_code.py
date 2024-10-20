@@ -255,13 +255,14 @@ class CodeGenerator(NodeVisitor):
                 dims_str = "".join(map(lambda d: f'[{d}]', dims))
                 return f'{element_type}{dims_str}'
 
-            def init_list_to_str(init_list):
+            def init_list_to_values(init_list):
                 if isinstance(init_list, InitList):
-                    joined_elements = ', '.join(
-                        map(init_list_to_str, init_list.exprs))
-                    return f'[{joined_elements}]'
+                    return list(map(init_list_to_values,
+                                    init_list.exprs))
                 else:
-                    return init_list.value
+                    return self.parse_literal_values(
+                        init_list.value,
+                        init_list.uc_type.typename)
 
             root_array_decl = node.parent
             while isinstance(root_array_decl.parent, ArrayDecl):
@@ -290,7 +291,8 @@ class CodeGenerator(NodeVisitor):
                     inst = (
                         f'global_{array_type_to_str(array_type)}',
                         init_list_global_var,
-                        init_list_to_str(init_list))
+                        # TODO: Fix this. For some reason, in the intepreter, the arrays are being stored in a single cell in M.
+                        init_list_to_values(init_list))
                     self.text.append(inst)
                 else:
                     init_list_global_var = self.new_text("str")
