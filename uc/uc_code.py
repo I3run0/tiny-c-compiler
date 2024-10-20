@@ -63,7 +63,7 @@ class CodeGenerator(NodeVisitor):
         self.fname: str = "_glob_"
         self.return_temp: Union[str, None] = None
         self.parameters_temp: Union[List[str], None] = None
-        self.versions: Dict[str, int] = {self.fname: 1}
+        self.versions: Dict[str, int] = {self.fname: 0}
         # version dictionary for labels to avoid collisions
         self.label_versions: Dict[str, int] = {"if": 1, "while": 1, "for": 1}
 
@@ -211,17 +211,15 @@ class CodeGenerator(NodeVisitor):
                 inst = ("print_" + expr.uc_type.typename, expr.gen_location)
                 self.current_block.append(inst)
 
-        else:
+        elif node.expr is not None:
             self.visit(node.expr)
-
-            # TODO: Load the location containing the expression
 
             # Create the opcode and append to list
             inst = ("print_" + node.expr.uc_type.typename,
                     node.expr.gen_location)
             self.current_block.append(inst)
-
-        # TODO: Handle the cases when node.expr is None or ExprList
+        else:
+            self.current_block.append(("print_void",))
 
     def array_dims_from_uc_type_array(self, array_type):
         dims = []
@@ -237,7 +235,7 @@ class CodeGenerator(NodeVisitor):
         while isinstance(current_array_type, ArrayType):
             current_array_type = current_array_type.type
 
-        return current_array_type.typename
+        return current_array_type
 
     def visit_VarDecl(self, node: VarDecl):
         """
@@ -247,20 +245,12 @@ class CodeGenerator(NodeVisitor):
             # Global declarations handled at GlobalDecl
             return
 
-        # Allocate on stack memory
-        _varname = self.new_reg(node.declname.name)
-        inst = ("alloc_" + node.type.name, _varname)
-
-        self.current_block.append(inst)
-        node.gen_location = _varname
-        node.declname.scope.gen_location = _varname
-
         # Store optional init val
-
         if isinstance(node.parent, ArrayDecl):
             def array_type_to_str(array_type):
                 dims = self.array_dims_from_uc_type_array(array_type)
-                element_type = self.element_type_from_uc_type_array(array_type)
+                element_type = self.element_type_from_uc_type_array(
+                    array_type).typename
 
                 dims_str = "".join(map(lambda d: f'[{d}]', dims))
                 return f'{element_type}{dims_str}'
@@ -279,17 +269,48 @@ class CodeGenerator(NodeVisitor):
 
             init_list = root_array_decl.parent.init
             array_type = root_array_decl.uc_type
+            element_type = self.element_type_from_uc_type_array(array_type)
+            dims = self.array_dims_from_uc_type_array(array_type)
             id = root_array_decl.parent.name
             # id.scope.gen_location = _varname
 
+            # Allocate on stack memory
+            _varname = self.new_reg(node.declname.name)
+            inst = (f"alloc_{node.type.name}_" +
+                    '_'.join([str(d) for d in dims]), _varname)
+
+            self.current_block.append(inst)
+            node.gen_location = _varname
+            node.declname.scope.gen_location = _varname
+
             if init_list is not None:
-                init_list_global_var = self.new_reg(f'const_{id.name}')
-                inst = (
-                    f'global_{array_type_to_str(array_type)}',
-                    init_list_global_var,
-                    init_list_to_str(init_list))
-                self.text.append(inst)
+                init_list_global_var = None
+                if isinstance(init_list, InitList):
+                    init_list_global_var = self.new_text(f'const_{id.name}')
+                    inst = (
+                        f'global_{array_type_to_str(array_type)}',
+                        init_list_global_var,
+                        init_list_to_str(init_list))
+                    self.text.append(inst)
+                else:
+                    init_list_global_var = self.new_text("str")
+                    inst = ("global_string",
+                            init_list_global_var, init_list.value)
+                    self.text.append(inst)
+
+                self.current_block.append(
+                    (f"store_{element_type.typename}_" +
+                     '_'.join([str(d) for d in dims]),
+                     init_list_global_var, _varname))
         else:
+            # Allocate on stack memory
+            _varname = self.new_reg(node.declname.name)
+            inst = ("alloc_" + node.type.name, _varname)
+
+            self.current_block.append(inst)
+            node.gen_location = _varname
+            node.declname.scope.gen_location = _varname
+
             _init = node.parent.init
             if _init is not None:
                 self.visit(_init)
@@ -663,7 +684,7 @@ class CodeGenerator(NodeVisitor):
 
         node.gen_location = self.new_temp()
         self.current_block.append(
-            (f'load_{node.uc_type.typename}*',
+            (f'load_{node.uc_type.typename}_*',
              address_of_element, node.gen_location)
         )
 
