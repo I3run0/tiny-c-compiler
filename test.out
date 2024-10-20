@@ -4,133 +4,13 @@ rootdir: /workspaces/university-mc921/p4-codegen-217787_233539
 configfile: pyproject.toml
 collected 25 items
 
-tests/test_code.py ...........FF.F..FFFFFFFF                             [100%]
+tests/test_code.py ..............F..FFFFFFFF                             [100%]
 
 =================================== FAILURES ===================================
-________________________________ test_code[t12] ________________________________
-
-test_name = 't12'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff769b5dfc0>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
-            sema.visit(ast)
-            gen = CodeGenerator(False)
-            gen.visit(ast)
-            gencode = gen.code
-            vm = Interpreter(False)
-            with pytest.raises(SystemExit) as sys_error:
-                vm.run(gencode)
-            captured = capsys.readouterr()
-            assert sys_error.value.code == 0
-            expect = f_ex.read()
->       assert captured.out == expect
-E       AssertionError: assert '8' == '-6'
-E         
-E         - -6
-E         + 8
-
-tests/test_code.py:80: AssertionError
-________________________________ test_code[t13] ________________________________
-
-test_name = 't13'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff769cf6b30>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
-            sema.visit(ast)
-            gen = CodeGenerator(False)
-            gen.visit(ast)
-            gencode = gen.code
-            vm = Interpreter(False)
-            with pytest.raises(SystemExit) as sys_error:
-                vm.run(gencode)
-            captured = capsys.readouterr()
-            assert sys_error.value.code == 0
-            expect = f_ex.read()
->       assert captured.out == expect
-E       AssertionError: assert '8' == '-10'
-E         
-E         - -10
-E         + 8
-
-tests/test_code.py:80: AssertionError
 ________________________________ test_code[t15] ________________________________
 
 test_name = 't15'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff769937c40>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa4db70>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -192,7 +72,7 @@ uc/uc_sema.py:163: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff769964430>
+self = <uc.uc_code.CodeGenerator object at 0x7efedfa4c2e0>
 node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=a,
                                                scope=<uc.uc_sem...                uc_type=type(int)),
          declname=ID(name=find_lcm),
@@ -221,7 +101,7 @@ uc/uc_code.py:380: AttributeError
 ________________________________ test_code[t18] ________________________________
 
 test_name = 't18'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff769c92680>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedf9d3280>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -283,7 +163,7 @@ uc/uc_sema.py:163: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff7698f9450>
+self = <uc.uc_code.CodeGenerator object at 0x7efedfa9f9a0>
 node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=n,
                                                scope=<uc.uc_sem...                   uc_type=type(int)),
          declname=ID(name=checkPrime),
@@ -312,7 +192,7 @@ uc/uc_code.py:380: AttributeError
 ________________________________ test_code[t19] ________________________________
 
 test_name = 't19'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff769974eb0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedfc6e560>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -374,7 +254,7 @@ uc/uc_sema.py:163: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff769965630>
+self = <uc.uc_code.CodeGenerator object at 0x7efedfa9c400>
 node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=n,
                                                scope=<uc.uc_sem...                   uc_type=type(int)),
          declname=ID(name=checkPrime),
@@ -403,7 +283,7 @@ uc/uc_code.py:380: AttributeError
 ________________________________ test_code[t20] ________________________________
 
 test_name = 't20'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff7698f85e0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa698a0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -467,8 +347,8 @@ uc/uc_sema.py:355: in assert_init_list_size_matches_array_dimension
     self._assert_semantic(
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_sema.Visitor object at 0x7ff7698f9b70>, condition = False
-msg_code = 9, coord = <uc.uc_parser.Coord object at 0x7ff7698f96f0>, name = 's'
+self = <uc.uc_sema.Visitor object at 0x7efedfa69e70>, condition = False
+msg_code = 9, coord = <uc.uc_parser.Coord object at 0x7efedfa6b880>, name = 's'
 ltype = '', rtype = ''
 
     def _assert_semantic(self, condition: bool, msg_code: int, coord, name: str = "", ltype="", rtype=""):
@@ -512,7 +392,7 @@ SemanticError: Size mismatch on s initialization @ 4:10
 ________________________________ test_code[t21] ________________________________
 
 test_name = 't21'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff769b5ddb0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa4ceb0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -566,7 +446,7 @@ uc/uc_sema.py:163: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff7699374f0>
+self = <uc.uc_code.CodeGenerator object at 0x7efedfda1030>
 node = GlobalDecl(decls=[Decl(name=ID(name=v,
                                scope=<uc.uc_sema.SymbolTableEntry object at 0x7...                                ],
                                      uc_type=type(Array<int>))),
@@ -595,7 +475,7 @@ uc/uc_code.py:352: AttributeError
 ________________________________ test_code[t22] ________________________________
 
 test_name = 't22'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff7698cfd60>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedfe05a80>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -649,7 +529,7 @@ uc/uc_sema.py:163: in visit
     return visitor(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff7699a4a60>
+self = <uc.uc_code.CodeGenerator object at 0x7efedfaa9cf0>
 node = GlobalDecl(decls=[Decl(name=ID(name=arr,
                                scope=<uc.uc_sema.SymbolTableEntry object at 0...                                ],
                                      uc_type=type(Array<int>))),
@@ -678,7 +558,7 @@ uc/uc_code.py:352: AttributeError
 ________________________________ test_code[t23] ________________________________
 
 test_name = 't23'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff769e5cc40>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedfa68b80>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -744,7 +624,7 @@ uc/uc_sema.py:162: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff769c907f0>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7efedfaa71c0>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
@@ -754,7 +634,7 @@ uc/uc_sema.py:173: AttributeError
 ________________________________ test_code[t24] ________________________________
 
 test_name = 't24'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff7698ce9b0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efedf9d16c0>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -820,7 +700,7 @@ uc/uc_sema.py:162: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff769967520>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7efedf8f17e0>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
@@ -830,7 +710,7 @@ uc/uc_sema.py:173: AttributeError
 ________________________________ test_code[t25] ________________________________
 
 test_name = 't25'
-capsys = <_pytest.capture.CaptureFixture object at 0x7ff7699ae7d0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7efee00f1660>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -896,7 +776,7 @@ uc/uc_sema.py:162: in visit
     self.anotate_parent_visit(node)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <uc.uc_code.CodeGenerator object at 0x7ff769b5dba0>, node = None
+self = <uc.uc_code.CodeGenerator object at 0x7efedfa69f60>, node = None
 
     def anotate_parent_visit(self, node):
 >       for _, child in node.children():
@@ -904,8 +784,6 @@ E       AttributeError: 'NoneType' object has no attribute 'children'
 
 uc/uc_sema.py:173: AttributeError
 =========================== short test summary info ============================
-FAILED tests/test_code.py::test_code[t12] - AssertionError: assert '8' == '-6'
-FAILED tests/test_code.py::test_code[t13] - AssertionError: assert '8' == '-10'
 FAILED tests/test_code.py::test_code[t15] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t18] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t19] - AttributeError: 'NoneType' object...
@@ -915,4 +793,4 @@ FAILED tests/test_code.py::test_code[t22] - AttributeError: 'InitList' object...
 FAILED tests/test_code.py::test_code[t23] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t24] - AttributeError: 'NoneType' object...
 FAILED tests/test_code.py::test_code[t25] - AttributeError: 'NoneType' object...
-======================== 11 failed, 14 passed in 0.92s =========================
+========================= 9 failed, 16 passed in 0.83s =========================

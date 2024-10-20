@@ -694,8 +694,8 @@ class CodeGenerator(NodeVisitor):
             self.current_block.append(inst_zero)
 
             node.gen_location = self.new_temp()
-            inst = (opcode, node.expr.gen_location,
-                    zero_gen_location, node.gen_location)
+            inst = (opcode, zero_gen_location,
+                    node.expr.gen_location, node.gen_location)
 
         elif node.op == "!":
             node.gen_location = self.new_temp()
