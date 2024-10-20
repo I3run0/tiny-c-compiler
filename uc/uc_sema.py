@@ -358,6 +358,9 @@ class Visitor(NodeVisitor):
                                      array_node.uc_type.size),
                                     9, name=node.name.name, coord=node.name.coord)
 
+                        # Annotate the size of the array in the type
+                        # (if it is not defined) by the InitList size.
+                        # This will be used later in the codegen phase.
                         if not hasattr(array_node.uc_type, "size") or \
                            array_node.uc_type.size is None:
                             if type(init_node) == InitList:
