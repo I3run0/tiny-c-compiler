@@ -358,6 +358,13 @@ class Visitor(NodeVisitor):
                                      array_node.uc_type.size),
                                     9, name=node.name.name, coord=node.name.coord)
 
+                        if not hasattr(array_node.uc_type, "size") or \
+                           array_node.uc_type.size is None:
+                            if type(init_node) == InitList:
+                                array_node.uc_type.size = len(init_node.exprs)
+                            else:
+                                array_node.uc_type.size = len(init_node.value)
+
                         if type(init_node) == InitList:
                             for _expr in init_node.exprs:
                                 if not isinstance(array_node.type, ArrayDecl):

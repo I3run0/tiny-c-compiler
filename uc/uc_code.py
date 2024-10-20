@@ -29,6 +29,8 @@ from uc.uc_ast import (
     BinaryOp,
     UnaryOp,
     InitList,
+    ArrayRef,
+    ArrayDecl,
 )
 from uc.uc_block import (
     CFG,
@@ -41,6 +43,7 @@ from uc.uc_block import (
 from uc.uc_interpreter import Interpreter
 from uc.uc_parser import UCParser
 from uc.uc_sema import NodeVisitor, Visitor
+from uc.uc_type import ArrayType
 
 
 class CodeGenerator(NodeVisitor):
@@ -220,6 +223,22 @@ class CodeGenerator(NodeVisitor):
 
         # TODO: Handle the cases when node.expr is None or ExprList
 
+    def array_dims_from_uc_type_array(self, array_type):
+        dims = []
+        current_array_type = array_type
+        while isinstance(current_array_type, ArrayType):
+            dims.append(current_array_type.size)
+            current_array_type = current_array_type.type
+
+        return dims
+
+    def element_type_from_uc_type_array(self, array_type):
+        current_array_type = array_type
+        while isinstance(current_array_type, ArrayType):
+            current_array_type = current_array_type.type
+
+        return current_array_type.typename
+
     def visit_VarDecl(self, node: VarDecl):
         """
         Allocate the variable (global or local) with the correct initial value (if there is any).
@@ -237,15 +256,49 @@ class CodeGenerator(NodeVisitor):
         node.declname.scope.gen_location = _varname
 
         # Store optional init val
-        _init = node.parent.init
-        if _init is not None:
-            self.visit(_init)
-            inst = (
-                "store_" + node.type.name,
-                _init.gen_location,
-                node.gen_location,
-            )
-            self.current_block.append(inst)
+
+        if isinstance(node.parent, ArrayDecl):
+            def array_type_to_str(array_type):
+                dims = self.array_dims_from_uc_type_array(array_type)
+                element_type = self.element_type_from_uc_type_array(array_type)
+
+                dims_str = "".join(map(lambda d: f'[{d}]', dims))
+                return f'{element_type}{dims_str}'
+
+            def init_list_to_str(init_list):
+                if isinstance(init_list, InitList):
+                    joined_elements = ', '.join(
+                        map(init_list_to_str, init_list.exprs))
+                    return f'[{joined_elements}]'
+                else:
+                    return init_list.value
+
+            root_array_decl = node.parent
+            while isinstance(root_array_decl.parent, ArrayDecl):
+                root_array_decl = root_array_decl.parent
+
+            init_list = root_array_decl.parent.init
+            array_type = root_array_decl.uc_type
+            id = root_array_decl.parent.name
+            # id.scope.gen_location = _varname
+
+            if init_list is not None:
+                init_list_global_var = self.new_reg(f'const_{id.name}')
+                inst = (
+                    f'global_{array_type_to_str(array_type)}',
+                    init_list_global_var,
+                    init_list_to_str(init_list))
+                self.text.append(inst)
+        else:
+            _init = node.parent.init
+            if _init is not None:
+                self.visit(_init)
+                inst = (
+                    "store_" + node.type.name,
+                    _init.gen_location,
+                    node.gen_location,
+                )
+                self.current_block.append(inst)
 
     def visit_Program(self, node: Node):
         """
@@ -364,7 +417,7 @@ class CodeGenerator(NodeVisitor):
         """
         Visit the node type.
         """
-        pass
+        self.visit(node.type)
 
     def visit_FuncDecl(self, node: Node):
         """
@@ -546,6 +599,74 @@ class CodeGenerator(NodeVisitor):
         """
         pass
 
+    def visit_ArrayRef(self, node: ArrayRef):
+        """
+        Start by visiting the subscript. Load the values of the index in a new temporary. If the array has multiple dimensions: you need to generate arithmetic instructions to compute the index of the element in the array.
+        """
+        array_id = node.name
+        while not isinstance(array_id, ID):
+            array_id = array_id.name
+
+        dims = self.array_dims_from_uc_type_array(array_id.uc_type)
+
+        computed_index_var = None
+        if len(dims) > 1:
+            internal_array_ref = node
+            array_refs = []
+            while not isinstance(internal_array_ref, ID):
+                array_refs.append(internal_array_ref)
+                internal_array_ref = internal_array_ref.name
+
+            current_accumulator_var = None
+            for i, array_ref in enumerate(reversed(array_refs)):
+                if i < len(dims) - 1:
+                    dim_multiplier_var = self.new_temp()
+                    self.current_block.append(
+                        ('literal_int', dims[i+1], dim_multiplier_var))
+
+                    self.visit(array_ref.subscript)
+                    mul_result_var = self.new_temp()
+                    self.current_block.append(
+                        ('mul_int', array_ref.subscript.gen_location,
+                         dim_multiplier_var, mul_result_var))
+
+                    if i > 0:
+                        new_accumulator_var = self.new_temp()
+                        self.current_block.append(
+                            ('add_int', current_accumulator_var,
+                             mul_result_var, new_accumulator_var))
+                        current_accumulator_var = new_accumulator_var
+                    else:
+                        current_accumulator_var = mul_result_var
+                else:
+                    self.visit(array_ref.subscript)
+
+                    new_accumulator_var = self.new_temp()
+                    self.current_block.append(
+                        ('add_int', current_accumulator_var,
+                            array_ref.subscript.gen_location,
+                            new_accumulator_var))
+                    current_accumulator_var = new_accumulator_var
+
+            computed_index_var = current_accumulator_var
+        else:
+            self.visit(node.subscript)
+            computed_index_var = node.subscript.gen_location
+
+        address_of_element = self.new_temp()
+        self.current_block.append(
+            (f'elem_{node.uc_type.typename}',
+             f'%{array_id.name}',  # array address variable
+             computed_index_var,  # index temp variable
+             address_of_element)  # address of element at index
+        )
+
+        node.gen_location = self.new_temp()
+        self.current_block.append(
+            (f'load_{node.uc_type.typename}*',
+             address_of_element, node.gen_location)
+        )
+
     def visit_FuncCall(self, node: FuncCall):
         """
         Start by generating the code for the arguments: for each one of them, visit the expression and generate a param_type instruction with its value. Then, allocate a temporary for the return value and generate the code to call the function.
@@ -661,7 +782,7 @@ class CodeGenerator(NodeVisitor):
         if hasattr(node, "parent") and \
                 isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
             # Handle code generation for declarions on Decl node
-            node.gen_location = node.scope.gen_location
+            pass
         else:
             # BRUNO TODO: I think that is not the best function to load the
             # the function description in the notebook has no metion about this
