@@ -42,6 +42,7 @@ from uc.uc_interpreter import Interpreter
 from uc.uc_parser import UCParser
 from uc.uc_sema import NodeVisitor, Visitor
 
+
 class CodeGenerator(NodeVisitor):
     """
     Node visitor class that creates 3-address encoded instruction sequences
@@ -127,7 +128,7 @@ class CodeGenerator(NodeVisitor):
         reg_name = reg_name + ".%d" % (self.versions[name])
         self.versions[name] += 1
         return reg_name
-    
+
     def current_temp(self) -> str:
         """
         Return the current temporary variable name.
@@ -162,7 +163,6 @@ class CodeGenerator(NodeVisitor):
                 return True
         return False
 
-    
     def parse_literral_values(self, value, vtype: str):
         '''
         Parse a literral value from string to bool, int . etc
@@ -171,7 +171,7 @@ class CodeGenerator(NodeVisitor):
             return int(value)
         elif vtype == "bool":
             return bool(value)
-            
+
     def visit_BinaryOp(self, node: BinaryOp):
         # Visit the left and right expressions
         if not isinstance(node.rvalue, BinaryOp) and not isinstance(
@@ -192,7 +192,8 @@ class CodeGenerator(NodeVisitor):
 
         # Create the opcode and append to list
         opcode = self.binary_ops[node.op] + "_" + node.lvalue.uc_type.typename
-        inst = (opcode, node.lvalue.gen_location, node.rvalue.gen_location, target)
+        inst = (opcode, node.lvalue.gen_location,
+                node.rvalue.gen_location, target)
         self.current_block.append(inst)
 
         # Store location of the result on the node
@@ -213,7 +214,8 @@ class CodeGenerator(NodeVisitor):
             # TODO: Load the location containing the expression
 
             # Create the opcode and append to list
-            inst = ("print_" + node.expr.uc_type.typename, node.expr.gen_location)
+            inst = ("print_" + node.expr.uc_type.typename,
+                    node.expr.gen_location)
             self.current_block.append(inst)
 
         # TODO: Handle the cases when node.expr is None or ExprList
@@ -241,7 +243,7 @@ class CodeGenerator(NodeVisitor):
             inst = (
                 "store_" + node.type.name,
                 _init.gen_location,
-                node.gen_location ,
+                node.gen_location,
             )
             self.current_block.append(inst)
 
@@ -303,14 +305,16 @@ class CodeGenerator(NodeVisitor):
 
         self.current_block.append(("exit:",))
 
-        # For the void function is only necessary the exit to the 
+        # For the void function is only necessary the exit to the
         # interpreter work
-        if node.type.name!= 'void':
+        if node.type.name != 'void':
             return_var = self.new_temp()
             self.current_block.append(
-                (f"load_{node.type.uc_type.typename}", self.return_temp, return_var)
+                (f"load_{node.type.uc_type.typename}",
+                 self.return_temp, return_var)
             )
-            self.current_block.append((f"return_{node.type.uc_type.typename}", return_var))
+            self.current_block.append(
+                (f"return_{node.type.uc_type.typename}", return_var))
         else:
             self.current_block.append((f"return_void",))
 
@@ -336,15 +340,16 @@ class CodeGenerator(NodeVisitor):
         for _decl in node.decls:
             if not isinstance(_decl, FuncDecl):
                 self.visit(_decl)
-                
+
                 gen_location = f'@{_decl.name.name}'
                 _id: ID = _decl.name
                 _id.scope.gen_location = gen_location
                 var_type = _decl.type.uc_type.typename
                 inst = (f"global_{var_type}", gen_location)
-                 
+
                 if hasattr(_decl, "init"):
-                    parsed_value = self.parse_literral_values(_decl.init.value, var_type)
+                    parsed_value = self.parse_literral_values(
+                        _decl.init.value, var_type)
                     inst += (parsed_value,)
 
                 self.text.append(inst)
@@ -368,7 +373,8 @@ class CodeGenerator(NodeVisitor):
         # Generate Function Definition
         _func_sig: VarDecl = node.type
         _func_param_types = node.uc_type.parameters_type
-        self.parameters_temp = [self.new_temp() for _ in range(len(_func_param_types))]
+        self.parameters_temp = [self.new_temp()
+                                for _ in range(len(_func_param_types))]
         func_definition = (
             f"define_{_func_sig.type.name}",
             f"@{_func_sig.declname.name}",
@@ -398,10 +404,9 @@ class CodeGenerator(NodeVisitor):
         """
         Visit all of the declarations that appear inside for statement.
         """
-        
+
         for decl in node.decls:
             self.visit(decl)
-
 
     def visit_Type(self, node: Node):
         """
@@ -422,11 +427,12 @@ class CodeGenerator(NodeVisitor):
         else_label = self.new_temp_label("if.else")
         end_label = self.new_temp_label("if.end")
 
-        inst = ("cbranch", node.cond.gen_location, '%' + then_label, '%' + else_label)
+        inst = ("cbranch", node.cond.gen_location,
+                '%' + then_label, '%' + else_label)
         self.current_block.append(inst)
 
         # Create the if true instruction
-        self.current_block.append((f'{then_label}:',)) 
+        self.current_block.append((f'{then_label}:',))
         self.visit(node.iftrue)
         self.current_block.append(('jump', end_label))
 
@@ -437,7 +443,6 @@ class CodeGenerator(NodeVisitor):
 
         self.current_block.append((f'{end_label}:',))
 
-        
         # then_block = BasicBlock(self.new_temp_label(then_label))
         # # self.visit(node.iftrue)
 
@@ -450,7 +455,7 @@ class CodeGenerator(NodeVisitor):
         """
         First, generate the initialization of the For and creates all the blocks required. Then, generate the jump to the condition block and generate the condition and the correct conditional branch. Generate the body of the For followed by the jump to the increment block. Generate the increment and the correct jump.
         """
-        
+
         # First visit the init function to gen the needed code
         self.visit(node.init)
 
@@ -462,24 +467,24 @@ class CodeGenerator(NodeVisitor):
 
         # Construct the for codition
         self.current_block.append((f'{cond_label}:',))
-        
+
         self.visit(node.cond)
-        cond_inst = ("cbranch", node.cond.gen_location, '%' + body_label, '%' + end_label)
+        cond_inst = ("cbranch", node.cond.gen_location,
+                     '%' + body_label, '%' + end_label)
         self.current_block.append(cond_inst)
 
         # Construct the for body
         self.current_block.append((f'{body_label}:',))
         self.visit(node.body)
-        
+
         # Construct the for increment
         self.current_block.append((f'{inc_label}:',))
         self.visit(node.next)
         self.current_block.append(('jump', cond_label))
-        
+
         # Construct the for end
         self.current_block.append((f'{end_label}:',))
-        
-        
+
     def visit_While(self, node: While):
         """
         The generation of While is similar to For except that it does not require the part related to initialization and increment.
@@ -489,19 +494,20 @@ class CodeGenerator(NodeVisitor):
         cond_label = self.new_temp_label("while.cond")
         body_label = self.new_temp_label("while.body")
         end_label = self.new_temp_label("while.end")
-        
+
         # Construct the for codition
         self.current_block.append((f'{cond_label}:',))
-        
+
         self.visit(node.cond)
-        cond_inst = ("cbranch", node.cond.gen_location, '%' + body_label, '%' + end_label)
+        cond_inst = ("cbranch", node.cond.gen_location,
+                     '%' + body_label, '%' + end_label)
         self.current_block.append(cond_inst)
 
         # Construct the for body
         self.current_block.append((f'{body_label}:',))
         self.visit(node.body)
         self.current_block.append(('jump', cond_label))
-        
+
         # Construct the for end
         self.current_block.append((f'{end_label}:',))
 
@@ -531,8 +537,9 @@ class CodeGenerator(NodeVisitor):
         atype = node.lvalue.uc_type.typename
 
         self.current_block.append(
-                (f'store_{atype}', rgen, lgen) 
-            )
+            (f'store_{atype}', rgen, lgen)
+        )
+
     def visit_Break(self, node: Node):
         """
         Generate a jump instruction to the current exit label.
@@ -561,7 +568,8 @@ class CodeGenerator(NodeVisitor):
 
         node.gen_location = self.new_temp()
         self.current_block.append(
-            (f"call_{node.uc_type.typename}", f'@{node.name.name}', node.gen_location)
+            (f"call_{node.uc_type.typename}",
+             f'@{node.name.name}', node.gen_location)
         )
 
     def visit_Assert(self, node: Assert):
@@ -571,7 +579,7 @@ class CodeGenerator(NodeVisitor):
         Visit the assert condition. Create the blocks for the condition and adust their predecessors. Generate the branch instruction and adjust the blocks to jump according to the condition. Generate the code for unsuccessful assert, generate the print instruction and the jump instruction to the return block, and successful assert.
         """
         self.visit(node.expr)
-        
+
         # Get the expression gen_location
         egen = node.expr.gen_location
 
@@ -589,17 +597,19 @@ class CodeGenerator(NodeVisitor):
         self.current_block.append((f'{assert_false}:',))
         str_to_print = self.new_text("str")
         coord = str(node.expr.coord).split(" ")[1]
-        fail_msg = (f'global_string', str_to_print, f'assertion_fail on {coord}')
+        fail_msg = (f'global_string', str_to_print,
+                    f'assertion_fail on {coord}')
         self.text.append(fail_msg)
         self.current_block.append(("print_string", str_to_print))
-        self.current_block.append(('jump', next_label)) #Todo adjust to the correct block
+        # Todo adjust to the correct block
+        self.current_block.append(('jump', next_label))
 
         # Create the assert True
         self.current_block.append((f'{assert_true}:',))
         temp = self.new_temp()
         self.current_block.append(('literal_int', 0, temp))
         self.current_block.append(('store_int', temp, "%1"))
-        #self.current_block.append(('jump', next_label)) 
+        # self.current_block.append(('jump', next_label))
 
     def visit_EmptyStatement(self, node: Node):
         pass
@@ -621,7 +631,7 @@ class CodeGenerator(NodeVisitor):
                     self.return_temp,
                 )
             )
-        
+
         self.current_block.append(("jump", "exit"))
 
     def visit_Constant(self, node: Constant):
@@ -638,18 +648,18 @@ class CodeGenerator(NodeVisitor):
 
         else:
             _target = self.new_temp()
-            parsed_value = self.parse_literral_values(node.value, node.uc_type.typename)
-        
+            parsed_value = self.parse_literral_values(
+                node.value, node.uc_type.typename)
+
             self.current_block.append(
                 (f"literal_{node.uc_type.typename}", parsed_value, _target)
             )
-        
-        node.gen_location = _target
 
+        node.gen_location = _target
 
     def visit_ID(self, node: ID):
         if hasattr(node, "parent") and \
-            isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
+                isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
             # Handle code generation for declarions on Decl node
             node.gen_location = node.scope.gen_location
         else:
@@ -657,9 +667,9 @@ class CodeGenerator(NodeVisitor):
             # the function description in the notebook has no metion about this
             node.gen_location = self.new_temp()
             # If a global or constant var use @
-            _var_name = f'{node.scope.gen_location}'  
+            _var_name = f'{node.scope.gen_location}'
             self.current_block.append(
-                (f"load_{node.uc_type.typename}", _var_name , node.gen_location)
+                (f"load_{node.uc_type.typename}", _var_name, node.gen_location)
             )
 
     def visit_UnaryOp(self, node: UnaryOp):
@@ -668,7 +678,7 @@ class CodeGenerator(NodeVisitor):
         self.visit(node.expr)
 
         opcode = self.binary_ops[node.op] + '_' + node.uc_type.typename
-        
+
         # TODO Check if the following is the best approach
         # to threat with negative integers
 
@@ -676,23 +686,22 @@ class CodeGenerator(NodeVisitor):
         if node.op == '-':
             # This istantiate a new temp %k as zero
             # to perform node.gen = %k - node.expr
-            
+
             # Instantiate the literal zero
             zero_gen_location = self.new_temp()
-            inst_zero = (f'literal_{node.uc_type.typename}', 0, zero_gen_location)
+            inst_zero = (
+                f'literal_{node.uc_type.typename}', 0, zero_gen_location)
             self.current_block.append(inst_zero)
 
             node.gen_location = self.new_temp()
-            inst = (opcode, node.expr.gen_location, zero_gen_location, node.gen_location)
-   
+            inst = (opcode, node.expr.gen_location,
+                    zero_gen_location, node.gen_location)
+
         elif node.op == "!":
             node.gen_location = self.new_temp()
             inst = (opcode, node.expr.gen_location, node.gen_location)
 
         self.current_block.append(inst)
-    
-        
-
 
     def visit_ExprList(self, node: Node):
         pass

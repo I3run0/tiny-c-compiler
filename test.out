@@ -1,0 +1,918 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.15, pytest-8.3.2, pluggy-1.5.0
+rootdir: /workspaces/university-mc921/p4-codegen-217787_233539
+configfile: pyproject.toml
+collected 25 items
+
+tests/test_code.py ...........FF.F..FFFFFFFF                             [100%]
+
+=================================== FAILURES ===================================
+________________________________ test_code[t12] ________________________________
+
+test_name = 't12'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f9132767c10>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+            gen.visit(ast)
+            gencode = gen.code
+            vm = Interpreter(False)
+            with pytest.raises(SystemExit) as sys_error:
+                vm.run(gencode)
+            captured = capsys.readouterr()
+            assert sys_error.value.code == 0
+            expect = f_ex.read()
+>       assert captured.out == expect
+E       AssertionError: assert '8' == '-6'
+E         
+E         - -6
+E         + 8
+
+tests/test_code.py:80: AssertionError
+________________________________ test_code[t13] ________________________________
+
+test_name = 't13'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f91328fd9c0>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+            gen.visit(ast)
+            gencode = gen.code
+            vm = Interpreter(False)
+            with pytest.raises(SystemExit) as sys_error:
+                vm.run(gencode)
+            captured = capsys.readouterr()
+            assert sys_error.value.code == 0
+            expect = f_ex.read()
+>       assert captured.out == expect
+E       AssertionError: assert '8' == '-10'
+E         
+E         - -10
+E         + 8
+
+tests/test_code.py:80: AssertionError
+________________________________ test_code[t15] ________________________________
+
+test_name = 't15'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f9132537820>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:342: in visit_GlobalDecl
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:361: in visit_Decl
+    self.visit(node.type)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f9132574430>
+node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=a,
+                                               scope=<uc.uc_sem...                uc_type=type(int)),
+         declname=ID(name=find_lcm),
+         uc_type=type(int Function(int, int)))
+
+    def visit_FuncDecl(self, node: Node):
+        """
+        Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
+        """
+        # Generate Function Definition
+        _func_sig: VarDecl = node.type
+        _func_param_types = node.uc_type.parameters_type
+        self.parameters_temp = [self.new_temp()
+                                for _ in range(len(_func_param_types))]
+        func_definition = (
+            f"define_{_func_sig.type.name}",
+>           f"@{_func_sig.declname.name}",
+            [
+                (_func_param_types[i].typename, self.parameters_temp[i])
+                for i in range(len(_func_param_types))
+            ],
+        )
+E       AttributeError: 'NoneType' object has no attribute 'name'
+
+uc/uc_code.py:380: AttributeError
+________________________________ test_code[t18] ________________________________
+
+test_name = 't18'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f9132898dc0>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:342: in visit_GlobalDecl
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:361: in visit_Decl
+    self.visit(node.type)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f913250e9e0>
+node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=n,
+                                               scope=<uc.uc_sem...                   uc_type=type(int)),
+         declname=ID(name=checkPrime),
+         uc_type=type(int Function(int)))
+
+    def visit_FuncDecl(self, node: Node):
+        """
+        Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
+        """
+        # Generate Function Definition
+        _func_sig: VarDecl = node.type
+        _func_param_types = node.uc_type.parameters_type
+        self.parameters_temp = [self.new_temp()
+                                for _ in range(len(_func_param_types))]
+        func_definition = (
+            f"define_{_func_sig.type.name}",
+>           f"@{_func_sig.declname.name}",
+            [
+                (_func_param_types[i].typename, self.parameters_temp[i])
+                for i in range(len(_func_param_types))
+            ],
+        )
+E       AttributeError: 'NoneType' object has no attribute 'name'
+
+uc/uc_code.py:380: AttributeError
+________________________________ test_code[t19] ________________________________
+
+test_name = 't19'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f9132584e50>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:342: in visit_GlobalDecl
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:361: in visit_Decl
+    self.visit(node.type)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f9132576380>
+node = FuncDecl(params=ParamList(params=[Decl(name=ID(name=n,
+                                               scope=<uc.uc_sem...                   uc_type=type(int)),
+         declname=ID(name=checkPrime),
+         uc_type=type(int Function(int)))
+
+    def visit_FuncDecl(self, node: Node):
+        """
+        Generate the function definition (including function name, return type and arguments types). This is also a good time to generate the entry point for function, allocate a temporary for the return statement (if not a void function), and visit the arguments.
+        """
+        # Generate Function Definition
+        _func_sig: VarDecl = node.type
+        _func_param_types = node.uc_type.parameters_type
+        self.parameters_temp = [self.new_temp()
+                                for _ in range(len(_func_param_types))]
+        func_definition = (
+            f"define_{_func_sig.type.name}",
+>           f"@{_func_sig.declname.name}",
+            [
+                (_func_param_types[i].typename, self.parameters_temp[i])
+                for i in range(len(_func_param_types))
+            ],
+        )
+E       AttributeError: 'NoneType' object has no attribute 'name'
+
+uc/uc_code.py:380: AttributeError
+________________________________ test_code[t20] ________________________________
+
+test_name = 't20'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f913250d960>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+>           sema.visit(ast)
+
+tests/test_code.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_sema.py:243: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_sema.py:283: in visit_FuncDef
+    self.visit(node.body)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_sema.py:502: in visit_Compound
+    self.visit(_stament)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_sema.py:374: in visit_Decl
+    assert_init_list_size_matches_array_dimension(
+uc/uc_sema.py:355: in assert_init_list_size_matches_array_dimension
+    self._assert_semantic(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_sema.Visitor object at 0x7f913250f760>, condition = False
+msg_code = 9, coord = <uc.uc_parser.Coord object at 0x7f913250f880>, name = 's'
+ltype = '', rtype = ''
+
+    def _assert_semantic(self, condition: bool, msg_code: int, coord, name: str = "", ltype="", rtype=""):
+        """Check condition, if false print selected error message and exit"""
+        error_msgs = {
+            1: f"{name} is not defined",
+            2: f"subscript must be of type(int), not {ltype}",
+            3: "Expression must be of type(bool)",
+            4: f"Cannot assign {rtype} to {ltype}",
+            5: f"Binary operator {name} does not have matching LHS/RHS types",
+            6: f"Binary operator {name} is not supported by {ltype}",
+            7: "Break statement must be inside a loop",
+            8: "Array dimension mismatch",
+            9: f"Size mismatch on {name} initialization",
+            10: f"{name} initialization type mismatch",
+            11: f"{name} initialization must be a single element",
+            12: "Lists have different sizes",
+            13: "List & variable have different sizes",
+            14: f"conditional expression is {ltype}, not type(bool)",
+            15: f"{name} is not a function",
+            16: f"no. arguments to call {name} function mismatch",
+            17: f"Type mismatch with parameter {name}",
+            18: "The condition expression must be of type(bool)",
+            19: "Expression must be a constant",
+            20: "Expression is not of basic type",
+            21: f"{name} does not reference a variable of basic type",
+            22: f"{name} is not a variable",
+            23: f"Return of {ltype} is incompatible with {rtype} function definition",
+            24: f"Name {name} is already defined in this scope",
+            25: f"Unary operator {name} is not supported",
+        }
+        if not condition:
+            msg = error_msgs[msg_code]  # invalid msg_code raises Exception
+            print("SemanticError: %s %s" % (msg, coord), file=sys.stdout)
+>           sys.exit(1)
+E           SystemExit: 1
+
+uc/uc_sema.py:238: SystemExit
+----------------------------- Captured stdout call -----------------------------
+SemanticError: Size mismatch on s initialization @ 4:10
+________________________________ test_code[t21] ________________________________
+
+test_name = 't21'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f913289a3b0>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f91325775e0>
+node = GlobalDecl(decls=[Decl(name=ID(name=v,
+                               scope=<uc.uc_sema.SymbolTableEntry object at 0x7...                                ],
+                                     uc_type=type(Array<int>))),
+                 ])
+
+    def visit_GlobalDecl(self, node: GlobalDecl):
+        """
+        Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
+        """
+        for _decl in node.decls:
+            if not isinstance(_decl, FuncDecl):
+                self.visit(_decl)
+    
+                gen_location = f'@{_decl.name.name}'
+                _id: ID = _decl.name
+                _id.scope.gen_location = gen_location
+                var_type = _decl.type.uc_type.typename
+                inst = (f"global_{var_type}", gen_location)
+    
+                if hasattr(_decl, "init"):
+                    parsed_value = self.parse_literral_values(
+>                       _decl.init.value, var_type)
+E                   AttributeError: 'InitList' object has no attribute 'value'
+
+uc/uc_code.py:352: AttributeError
+________________________________ test_code[t22] ________________________________
+
+test_name = 't22'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f91325340d0>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f9132586e30>
+node = GlobalDecl(decls=[Decl(name=ID(name=arr,
+                               scope=<uc.uc_sema.SymbolTableEntry object at 0...                                ],
+                                     uc_type=type(Array<int>))),
+                 ])
+
+    def visit_GlobalDecl(self, node: GlobalDecl):
+        """
+        Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
+        """
+        for _decl in node.decls:
+            if not isinstance(_decl, FuncDecl):
+                self.visit(_decl)
+    
+                gen_location = f'@{_decl.name.name}'
+                _id: ID = _decl.name
+                _id.scope.gen_location = gen_location
+                var_type = _decl.type.uc_type.typename
+                inst = (f"global_{var_type}", gen_location)
+    
+                if hasattr(_decl, "init"):
+                    parsed_value = self.parse_literral_values(
+>                       _decl.init.value, var_type)
+E                   AttributeError: 'InitList' object has no attribute 'value'
+
+uc/uc_code.py:352: AttributeError
+________________________________ test_code[t23] ________________________________
+
+test_name = 't23'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f91325ba020>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:304: in visit_FuncDef
+    self.visit(node.body)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:519: in visit_Compound
+    self.visit(statment)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:212: in visit_Print
+    self.visit(node.expr)
+uc/uc_sema.py:162: in visit
+    self.anotate_parent_visit(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f91324596f0>, node = None
+
+    def anotate_parent_visit(self, node):
+>       for _, child in node.children():
+E       AttributeError: 'NoneType' object has no attribute 'children'
+
+uc/uc_sema.py:173: AttributeError
+________________________________ test_code[t24] ________________________________
+
+test_name = 't24'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f9132a6c490>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:304: in visit_FuncDef
+    self.visit(node.body)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:519: in visit_Compound
+    self.visit(statment)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:212: in visit_Print
+    self.visit(node.expr)
+uc/uc_sema.py:162: in visit
+    self.anotate_parent_visit(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f91325b0eb0>, node = None
+
+    def anotate_parent_visit(self, node):
+>       for _, child in node.children():
+E       AttributeError: 'NoneType' object has no attribute 'children'
+
+uc/uc_sema.py:173: AttributeError
+________________________________ test_code[t25] ________________________________
+
+test_name = 't25'
+capsys = <_pytest.capture.CaptureFixture object at 0x7f91325b8fd0>
+
+    @pytest.mark.parametrize(
+        "test_name",
+        [
+            "t01",
+            "t02",
+            "t03",
+            "t04",
+            "t05",
+            "t06",
+            "t07",
+            "t08",
+            "t09",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20",
+            "t21",
+            "t22",
+            "t23",
+            "t24",
+            "t25",
+        ],
+    )
+    # capfd will capture the stdout/stderr outputs generated during the test
+    def test_code(test_name, capsys):
+        input_path, expected_path = resolve_test_files(test_name)
+    
+        p = UCParser(debug=False)
+        with open(input_path) as f_in, open(expected_path) as f_ex:
+            ast = p.parse(f_in.read())
+            sema = Visitor()
+            sema.visit(ast)
+            gen = CodeGenerator(False)
+>           gen.visit(ast)
+
+tests/test_code.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:256: in visit_Program
+    self.visit(_decl)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:304: in visit_FuncDef
+    self.visit(node.body)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:519: in visit_Compound
+    self.visit(statment)
+uc/uc_sema.py:163: in visit
+    return visitor(node)
+uc/uc_code.py:212: in visit_Print
+    self.visit(node.expr)
+uc/uc_sema.py:162: in visit
+    self.anotate_parent_visit(node)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <uc.uc_code.CodeGenerator object at 0x7f91325b83d0>, node = None
+
+    def anotate_parent_visit(self, node):
+>       for _, child in node.children():
+E       AttributeError: 'NoneType' object has no attribute 'children'
+
+uc/uc_sema.py:173: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_code.py::test_code[t12] - AssertionError: assert '8' == '-6'
+FAILED tests/test_code.py::test_code[t13] - AssertionError: assert '8' == '-10'
+FAILED tests/test_code.py::test_code[t15] - AttributeError: 'NoneType' object...
+FAILED tests/test_code.py::test_code[t18] - AttributeError: 'NoneType' object...
+FAILED tests/test_code.py::test_code[t19] - AttributeError: 'NoneType' object...
+FAILED tests/test_code.py::test_code[t20] - SystemExit: 1
+FAILED tests/test_code.py::test_code[t21] - AttributeError: 'InitList' object...
+FAILED tests/test_code.py::test_code[t22] - AttributeError: 'InitList' object...
+FAILED tests/test_code.py::test_code[t23] - AttributeError: 'NoneType' object...
+FAILED tests/test_code.py::test_code[t24] - AttributeError: 'NoneType' object...
+FAILED tests/test_code.py::test_code[t25] - AttributeError: 'NoneType' object...
+======================== 11 failed, 14 passed in 0.99s =========================
