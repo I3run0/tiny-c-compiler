@@ -67,6 +67,8 @@ class CodeGenerator(NodeVisitor):
         # version dictionary for labels to avoid collisions
         self.label_versions: Dict[str, int] = {"if": 1, "while": 1, "for": 1}
 
+        self.scope_stack: List[Dict[str, str]] = [{}]
+
         # The generated code (list of tuples)
         # At the end of visit_program, we call each function definition to emit
         # the instructions inside basic blocks. The global instructions that
@@ -125,11 +127,21 @@ class CodeGenerator(NodeVisitor):
         Create a new temporary variable of a given scope (function name).
         """
         reg_name = "%" + "%s" % (name)
+        self.scope_stack[-1][name] = reg_name
         if name not in self.versions:
             self.versions[name] = 2
             return reg_name
         reg_name = reg_name + ".%d" % (self.versions[name])
         self.versions[name] += 1
+        return reg_name
+
+    def new_global_reg(self, name: str) -> str:
+        """
+        Create a new temporary variable of global scope.
+        """
+        reg_name = "@" + "%s" % (name)
+        self.scope_stack[0][name] = reg_name
+
         return reg_name
 
     def current_temp(self) -> str:
@@ -160,11 +172,24 @@ class CodeGenerator(NodeVisitor):
         '''
         Check if the variable is a global one 
         '''
-        varname = f'@{varname}'
-        for glb in self.text:
-            if varname in glb:
-                return True
+        for i in range(len(self.scope_stack)-1, -1, -1):
+            scope = self.scope_stack[i]
+            if varname in scope:
+                return i == 0
+
         return False
+
+    def push_scope(self):
+        '''
+        Push a new scope to the stack
+        '''
+        self.scope_stack.append({})
+
+    def pop_scope(self):
+        '''
+        Pop the last scope from the stack
+        '''
+        self.scope_stack.pop()
 
     def parse_literal_values(self, value, vtype: str):
         '''
@@ -237,33 +262,38 @@ class CodeGenerator(NodeVisitor):
 
         return current_array_type
 
+    def array_type_to_str(self, array_type):
+        dims = self.array_dims_from_uc_type_array(array_type)
+        element_type = self.element_type_from_uc_type_array(
+            array_type).typename
+
+        dims_str = "_".join([str(i) for i in dims])
+        return f'{element_type}_{dims_str}'
+
+    def init_list_to_values(self, init_list):
+        if isinstance(init_list, InitList):
+            return list(map(self.init_list_to_values,
+                            init_list.exprs))
+        else:
+            return self.parse_literal_values(
+                init_list.value,
+                init_list.uc_type.typename)
+
     def visit_VarDecl(self, node: VarDecl):
         """
         Allocate the variable (global or local) with the correct initial value (if there is any).
         """
-        if isinstance(node.parent.parent, GlobalDecl):
+        root_decl = node.parent
+        while not isinstance(root_decl, Decl):
+            root_decl = root_decl.parent
+
+        if isinstance(node.parent.parent, GlobalDecl) or \
+           isinstance(root_decl.parent, GlobalDecl):
             # Global declarations handled at GlobalDecl
             return
 
         # Store optional init val
         if isinstance(node.parent, ArrayDecl):
-            def array_type_to_str(array_type):
-                dims = self.array_dims_from_uc_type_array(array_type)
-                element_type = self.element_type_from_uc_type_array(
-                    array_type).typename
-
-                dims_str = "_".join([str(i) for i in dims])
-                return f'{element_type}_{dims_str}'
-
-            def init_list_to_values(init_list):
-                if isinstance(init_list, InitList):
-                    return list(map(init_list_to_values,
-                                    init_list.exprs))
-                else:
-                    return self.parse_literal_values(
-                        init_list.value,
-                        init_list.uc_type.typename)
-
             root_array_decl = node.parent
             while isinstance(root_array_decl.parent, ArrayDecl):
                 root_array_decl = root_array_decl.parent
@@ -289,10 +319,9 @@ class CodeGenerator(NodeVisitor):
                 if isinstance(init_list, InitList):
                     init_list_global_var = self.new_text(f'const_{id.name}')
                     inst = (
-                        f'global_{array_type_to_str(array_type)}',
+                        f'global_{self.array_type_to_str(array_type)}',
                         init_list_global_var,
-                        # TODO: Fix this. For some reason, in the intepreter, the arrays are being stored in a single cell in M.
-                        init_list_to_values(init_list))
+                        self.init_list_to_values(init_list))
                     self.text.append(inst)
                 else:
                     init_list_global_var = self.new_text("str")
@@ -364,6 +393,7 @@ class CodeGenerator(NodeVisitor):
         """
         Initialize the necessary blocks to construct the CFG of the function. Visit the function declaration. Visit all the declarations within the function. After allocating all declarations, visit the arguments initialization. Visit the body of the function to generate its code. Finally, setup the return block correctly and generate the return statement (even for void function).
         """
+        self.push_scope()
         # # Create the function block
         # # Use the function name as label
         # node.cfg = BasicBlock(node.decl.name.name)
@@ -393,6 +423,7 @@ class CodeGenerator(NodeVisitor):
                 (f"return_{node.type.uc_type.typename}", return_var))
         else:
             self.current_block.append(("return_void",))
+        self.pop_scope()
 
     def visit_ParamList(self, node: ParamList):
         """
@@ -417,18 +448,27 @@ class CodeGenerator(NodeVisitor):
             if not isinstance(_decl, FuncDecl) and not isinstance(_decl.type, FuncDecl):
                 self.visit(_decl)
 
-                gen_location = f'@{_decl.name.name}'
+                gen_location = self.new_global_reg(_decl.name.name)
                 _id: ID = _decl.name
                 _id.scope.gen_location = gen_location
-                var_type = _decl.type.uc_type.typename
-                inst = (f"global_{var_type}", gen_location)
+                if not isinstance(_decl.type.uc_type, ArrayType):
+                    var_type = _decl.type.uc_type.typename
+                    inst = (f"global_{var_type}", gen_location)
 
-                if hasattr(_decl, "init"):
-                    parsed_value = self.parse_literal_values(
-                        _decl.init.value, var_type)
-                    inst += (parsed_value,)
+                    if hasattr(_decl, "init"):
+                        parsed_value = self.parse_literal_values(
+                            _decl.init.value, var_type)
+                        inst += (parsed_value,)
 
-                self.text.append(inst)
+                    self.text.append(inst)
+                else:
+                    array_type = _decl.type.uc_type
+                    init_list = _decl.init
+                    inst = (
+                        f'global_{self.array_type_to_str(array_type)}',
+                        gen_location,
+                        self.init_list_to_values(init_list))
+                    self.text.append(inst)
 
     def visit_Decl(self, node: Decl):
         """
@@ -494,6 +534,7 @@ class CodeGenerator(NodeVisitor):
         """
         First, generate the evaluation of the condition (visit it). Create the required blocks and the branch for the condition. Move to the first block and generate the statement related to the then, create the branch to exit. In case, there is an else block, generate it in a similar way.
         """
+        self.push_scope()
 
         # Visit to create the gen_location
         self.visit(node.cond)
@@ -526,11 +567,13 @@ class CodeGenerator(NodeVisitor):
 
         # self.current_block.append(ConditionBlock(then_label))
         # self.current_block.append(ConditionBlock(end_label))
+        self.pop_scope()
 
     def visit_For(self, node: For):
         """
         First, generate the initialization of the For and creates all the blocks required. Then, generate the jump to the condition block and generate the condition and the correct conditional branch. Generate the body of the For followed by the jump to the increment block. Generate the increment and the correct jump.
         """
+        self.push_scope()
 
         # First visit the init function to gen the needed code
         self.visit(node.init)
@@ -560,11 +603,13 @@ class CodeGenerator(NodeVisitor):
 
         # Construct the for end
         self.current_block.append((f'{end_label}:',))
+        self.pop_scope()
 
     def visit_While(self, node: While):
         """
         The generation of While is similar to For except that it does not require the part related to initialization and increment.
         """
+        self.push_scope()
 
         # Necessary labels to perform the for loop
         cond_label = self.new_temp_label("while.cond")
@@ -586,13 +631,16 @@ class CodeGenerator(NodeVisitor):
 
         # Construct the for end
         self.current_block.append((f'{end_label}:',))
+        self.pop_scope()
 
     def visit_Compound(self, node: Compound):
         """
         Visit the list of block items (declarations or statements).
         """
+        self.push_scope()
         for statment in node.staments:
             self.visit(statment)
+        self.pop_scope()
 
     def visit_Assignment(self, node: Assignment):
         """
@@ -677,9 +725,16 @@ class CodeGenerator(NodeVisitor):
             computed_index_var = node.subscript.gen_location
 
         address_of_element = self.new_temp()
+
+        array_gen_location = array_id.name
+        if self.is_global(array_id.name):
+            array_gen_location = f'@{array_id.name}'
+        else:
+            array_gen_location = f'%{array_id.name}'
+
         self.current_block.append(
             (f'elem_{node.uc_type.typename}',
-             f'%{array_id.name}',  # array address variable
+             array_gen_location,  # array address variable
              computed_index_var,  # index temp variable
              address_of_element)  # address of element at index
         )

@@ -4,13 +4,13 @@ rootdir: /workspaces/university-mc921/p4-codegen-217787_233539
 configfile: pyproject.toml
 collected 25 items
 
-tests/test_code.py ...................FFFFFF                             [100%]
+tests/test_code.py .....................FFFF                             [100%]
 
 =================================== FAILURES ===================================
-________________________________ test_code[t20] ________________________________
+________________________________ test_code[t22] ________________________________
 
-test_name = 't20'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcc233d6c20>
+test_name = 't22'
+capsys = <_pytest.capture.CaptureFixture object at 0x7ffaa3900a60>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -61,184 +61,20 @@ capsys = <_pytest.capture.CaptureFixture object at 0x7fcc233d6c20>
             assert sys_error.value.code == 0
             expect = f_ex.read()
 >       assert captured.out == expect
-E       AssertionError: assert 'Isto é um teste: t xpto  ' == 'Isto é um teste: t 2 2'
+E       AssertionError: assert 'Array Before... 3 4 5 6 7 7 ' == 'Array Before... 4 5 6 7 8 9 '
 E         
-E         - Isto é um teste: t 2 2
-E         ?                    ^^^
-E         + Isto é um teste: t xpto  
-E         ?                    ^^^^^^
+E         Skipping 86 identical leading characters in diff, use -v to show
+E           tes: 
+E         - 1 2 3 4 5 6 7 8 9 
+E         ?               ^^^^
+E         + 1 2 2 3 4 5 6 7 7 
+E         ?     ++          ^^
 
 tests/test_code.py:80: AssertionError
-________________________________ test_code[t21] ________________________________
-
-test_name = 't21'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcc237f7880>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
-            sema.visit(ast)
-            gen = CodeGenerator(False)
->           gen.visit(ast)
-
-tests/test_code.py:72: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:164: in visit
-    return visitor(node)
-uc/uc_code.py:332: in visit_Program
-    self.visit(_decl)
-uc/uc_sema.py:164: in visit
-    return visitor(node)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <uc.uc_code.CodeGenerator object at 0x7fcc23965090>
-node = GlobalDecl(decls=[Decl(name=ID(name=v,
-                               scope=<uc.uc_sema.SymbolTableEntry object at 0x7...                                ],
-                                     uc_type=type(Array<int>))),
-                 ])
-
-    def visit_GlobalDecl(self, node: GlobalDecl):
-        """
-        Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
-        """
-        for _decl in node.decls:
-            if not isinstance(_decl, FuncDecl) and not isinstance(_decl.type, FuncDecl):
-                self.visit(_decl)
-    
-                gen_location = f'@{_decl.name.name}'
-                _id: ID = _decl.name
-                _id.scope.gen_location = gen_location
-                var_type = _decl.type.uc_type.typename
-                inst = (f"global_{var_type}", gen_location)
-    
-                if hasattr(_decl, "init"):
-                    parsed_value = self.parse_literal_values(
->                       _decl.init.value, var_type)
-E                   AttributeError: 'InitList' object has no attribute 'value'
-
-uc/uc_code.py:428: AttributeError
-________________________________ test_code[t22] ________________________________
-
-test_name = 't22'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcc23781db0>
-
-    @pytest.mark.parametrize(
-        "test_name",
-        [
-            "t01",
-            "t02",
-            "t03",
-            "t04",
-            "t05",
-            "t06",
-            "t07",
-            "t08",
-            "t09",
-            "t10",
-            "t11",
-            "t12",
-            "t13",
-            "t14",
-            "t15",
-            "t16",
-            "t17",
-            "t18",
-            "t19",
-            "t20",
-            "t21",
-            "t22",
-            "t23",
-            "t24",
-            "t25",
-        ],
-    )
-    # capfd will capture the stdout/stderr outputs generated during the test
-    def test_code(test_name, capsys):
-        input_path, expected_path = resolve_test_files(test_name)
-    
-        p = UCParser(debug=False)
-        with open(input_path) as f_in, open(expected_path) as f_ex:
-            ast = p.parse(f_in.read())
-            sema = Visitor()
-            sema.visit(ast)
-            gen = CodeGenerator(False)
->           gen.visit(ast)
-
-tests/test_code.py:72: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-uc/uc_sema.py:164: in visit
-    return visitor(node)
-uc/uc_code.py:332: in visit_Program
-    self.visit(_decl)
-uc/uc_sema.py:164: in visit
-    return visitor(node)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <uc.uc_code.CodeGenerator object at 0x7fcc23acacb0>
-node = GlobalDecl(decls=[Decl(name=ID(name=arr,
-                               scope=<uc.uc_sema.SymbolTableEntry object at 0...                                ],
-                                     uc_type=type(Array<int>))),
-                 ])
-
-    def visit_GlobalDecl(self, node: GlobalDecl):
-        """
-        Visit each global declaration that are not function declarations. Indeed, it is usually simpler to visit the function declaration when visiting the definition of the function to generate all code at once.
-        """
-        for _decl in node.decls:
-            if not isinstance(_decl, FuncDecl) and not isinstance(_decl.type, FuncDecl):
-                self.visit(_decl)
-    
-                gen_location = f'@{_decl.name.name}'
-                _id: ID = _decl.name
-                _id.scope.gen_location = gen_location
-                var_type = _decl.type.uc_type.typename
-                inst = (f"global_{var_type}", gen_location)
-    
-                if hasattr(_decl, "init"):
-                    parsed_value = self.parse_literal_values(
->                       _decl.init.value, var_type)
-E                   AttributeError: 'InitList' object has no attribute 'value'
-
-uc/uc_code.py:428: AttributeError
 ________________________________ test_code[t23] ________________________________
 
 test_name = 't23'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcc23791390>
+capsys = <_pytest.capture.CaptureFixture object at 0x7ffaa38f1780>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -303,7 +139,7 @@ tests/test_code.py:80: AssertionError
 ________________________________ test_code[t24] ________________________________
 
 test_name = 't24'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcc23966f80>
+capsys = <_pytest.capture.CaptureFixture object at 0x7ffaa3967820>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -368,7 +204,7 @@ tests/test_code.py:80: AssertionError
 ________________________________ test_code[t25] ________________________________
 
 test_name = 't25'
-capsys = <_pytest.capture.CaptureFixture object at 0x7fcc233b6bc0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7ffaa3c38460>
 
     @pytest.mark.parametrize(
         "test_name",
@@ -432,10 +268,8 @@ E         ...Full output truncated (34 lines hidden), use '-vv' to show
 
 tests/test_code.py:80: AssertionError
 =========================== short test summary info ============================
-FAILED tests/test_code.py::test_code[t20] - AssertionError: assert 'Isto é um...
-FAILED tests/test_code.py::test_code[t21] - AttributeError: 'InitList' object...
-FAILED tests/test_code.py::test_code[t22] - AttributeError: 'InitList' object...
+FAILED tests/test_code.py::test_code[t22] - AssertionError: assert 'Array Bef...
 FAILED tests/test_code.py::test_code[t23] - AssertionError: assert 'Enter num...
 FAILED tests/test_code.py::test_code[t24] - AssertionError: assert 'Enter num...
 FAILED tests/test_code.py::test_code[t25] - AssertionError: assert 'Enter row...
-======================== 6 failed, 19 passed in 13.40s =========================
+======================== 4 failed, 21 passed in 12.94s =========================
