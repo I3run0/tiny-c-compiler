@@ -252,8 +252,8 @@ class CodeGenerator(NodeVisitor):
                 element_type = self.element_type_from_uc_type_array(
                     array_type).typename
 
-                dims_str = "".join(map(lambda d: f'[{d}]', dims))
-                return f'{element_type}{dims_str}'
+                dims_str = "_".join([str(i) for i in dims])
+                return f'{element_type}_{dims_str}'
 
             def init_list_to_values(init_list):
                 if isinstance(init_list, InitList):
@@ -392,7 +392,7 @@ class CodeGenerator(NodeVisitor):
             self.current_block.append(
                 (f"return_{node.type.uc_type.typename}", return_var))
         else:
-            self.current_block.append((f"return_void",))
+            self.current_block.append(("return_void",))
 
     def visit_ParamList(self, node: ParamList):
         """
@@ -805,7 +805,6 @@ class CodeGenerator(NodeVisitor):
         if hasattr(node, "parent") and \
                 isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
             # Handle code generation for declarions on Decl node
-            # pass
             node.gen_location = node.scope.gen_location
         else:
             # BRUNO TODO: I think that is not the best function to load the
