@@ -813,8 +813,24 @@ class CodeGenerator(NodeVisitor):
     def visit_EmptyStatement(self, node: Node):
         pass
 
-    def visit_Read(self, node: Node):
-        pass
+    def visit_Read(self, node: Read):
+        node_ids = [n for n in node.names if isinstance(n, ID)] + \
+            [
+                n[1] for child in node.names
+                if not isinstance(child, ID)
+                for n in (child.children())
+                if isinstance(n[1], ID)
+        ]
+
+        for id in node_ids:
+            var_gen_location = None
+            if self.is_global(id.name):
+                var_gen_location = f'@{id.name}'
+            else:
+                var_gen_location = f'%{id.name}'
+            self.current_block.append(
+                (f"read_{id.uc_type.typename}", var_gen_location)
+            )
 
     def visit_Return(self, node: Return):
         '''
