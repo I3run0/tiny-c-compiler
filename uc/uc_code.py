@@ -548,25 +548,34 @@ class CodeGenerator(NodeVisitor):
                 '%' + then_label, '%' + else_label)
         self.current_block.append(inst)
 
+        prev_block = self.current_block
+        then_block = BasicBlock(then_label)
+        else_block = BasicBlock(else_block)
+        end_block = BasicBlock(end_label)
+
+        prev_block.taken = then_block
+        prev_block.fall_through = else_block
+        then_block.predecessors.append(prev_block)
+        else_block.predecessors.append(prev_block)
+        then_block.next_block = end_block
+        else_block.next_block = end_block
+        end_block.predecessors += [then_block, else_block]
+
         # Create the if true instruction
+        self.current_block = then_block
         self.current_block.append((f'{then_label}:',))
         self.visit(node.iftrue)
         self.current_block.append(('jump', end_label))
 
         # Create the if False instructions
+        self.current_block = else_block
         self.current_block.append((f'{else_label}:',))
         if node.iffalse != None:
             self.visit(node.iffalse)
 
+        self.current_block = end_block
         self.current_block.append((f'{end_label}:',))
 
-        # then_block = BasicBlock(self.new_temp_label(then_label))
-        # # self.visit(node.iftrue)
-
-        # then_block.
-
-        # self.current_block.append(ConditionBlock(then_label))
-        # self.current_block.append(ConditionBlock(end_label))
         self.pop_scope()
 
     def visit_For(self, node: For):
