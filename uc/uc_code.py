@@ -402,7 +402,7 @@ class CodeGenerator(NodeVisitor):
 
         self.fname = node.decl.name.name
         self.return_temp = None
-
+        
         # Visit the function declaration
         self.visit(node.decl)
 
@@ -646,10 +646,12 @@ class CodeGenerator(NodeVisitor):
         """
         First, visit right side and load the value according to its type. Then, visit the left side and generate the code according to the assignment operator and the type of the expression (ID or ArrayRef).
         """
-
         # Visit the assignmented value
         self.visit(node.rvalue)
-
+        
+        if isinstance(node.lvalue, ArrayRef):
+            node.lvalue.not_load = True
+        
         # Is not needed to visit the left side we already
         self.visit(node.lvalue)
 
@@ -660,9 +662,14 @@ class CodeGenerator(NodeVisitor):
         lgen = node.lvalue.gen_location
         atype = node.lvalue.uc_type.typename
 
-        self.current_block.append(
-            (f'store_{atype}', rgen, lgen)
-        )
+        if isinstance(node.lvalue, ArrayRef):
+            self.current_block.append(
+                (f'store_{atype}_*', rgen, lgen)
+            )
+        else:
+            self.current_block.append(
+                (f'store_{atype}', rgen, lgen)
+            )
 
     def visit_Break(self, node: Node):
         """
@@ -739,7 +746,7 @@ class CodeGenerator(NodeVisitor):
              address_of_element)  # address of element at index
         )
 
-        if isinstance(node.parent, Read):
+        if hasattr(node, 'not_load'):
             node.gen_location = address_of_element
             return
 
@@ -829,17 +836,18 @@ class CodeGenerator(NodeVisitor):
         names = names.exprs if isinstance(names, ExprList) else [names]
 
         for name in names:
-            name.parent = node
-            self.visit(name)
             if not isinstance(name, ArrayRef):
+                self.visit(name)
                 self.current_block.append(
                     (f'read_{name.uc_type.typename}', name.gen_location)
                 )
             else:
+                name.not_load = True
+                self.visit(name)
                 self.current_block.append(
                     (f'read_{name.uc_type.typename}_*', name.gen_location)
                 )
-        
+
     def visit_Return(self, node: Return):
         '''
         If there is an expression, you need to visit it, load it if necessary and store its value to the return location. Then generate a jump to the return block if needed. Do not forget to update the predecessor of the return block.
