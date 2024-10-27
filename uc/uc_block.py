@@ -76,6 +76,7 @@ class Block:
     def __str__(self):
         return str(self.instructions)
 
+
 class BasicBlock(Block):
     """
     Class for a simple basic block.  Control flow unconditionally
@@ -121,10 +122,12 @@ class EmitBlocks(BlockVisitor):
         self.code: List[Tuple[str]] = []
 
     def visit_BasicBlock(self, block: Block):
+        pass
         for inst in block.instructions:
             self.code.append(inst)
 
     def visit_ConditionBlock(self, block: Block):
+        pass
         for inst in block.instructions:
             self.code.append(inst)
 
@@ -132,7 +135,8 @@ class EmitBlocks(BlockVisitor):
 class CFG:
     def __init__(self, fname: str):
         self.fname: str = fname
-        self.g = Digraph("g", filename=fname + ".gv", node_attr={"shape": "record"})
+        self.g = Digraph("g", filename=fname + ".gv",
+                         node_attr={"shape": "record"})
 
     def visit_BasicBlock(self, block: Block):
         # Get the label as node name
@@ -148,7 +152,8 @@ class CFG:
                 self.g.edge(_name, block.branch.label)
         else:
             # Function definition. An empty block that connect to the Entry Block
-            self.g.node(self.fname, label=None, _attributes={"shape": "ellipse"})
+            self.g.node(self.fname, label=None,
+                        _attributes={"shape": "ellipse"})
             self.g.edge(self.fname, block.next_block.label)
 
     def visit_ConditionBlock(self, block: Block):

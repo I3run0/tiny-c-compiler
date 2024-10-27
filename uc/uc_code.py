@@ -56,8 +56,7 @@ class CodeGenerator(NodeVisitor):
         # To debug with debug_print
         self._enable_stdout_debug = debug_print
         self.viewcfg: bool = viewcfg
-        # TODO: Remove this BasicBlock initialization and handle blocks correctly
-        self.current_block: Block = BasicBlock("temp")
+        self.current_block: Union[Block, None] = None
 
         # version dictionary for temporaries. We use the name as a Key
         self.fname: str = "_glob_"
@@ -111,6 +110,35 @@ class CodeGenerator(NodeVisitor):
         for _code in self.code:
             _str += format_instruction(_code) + "\n"
         buf.write(_str)
+
+    def flip_current_block_to_conditional(self):
+        if isinstance(self.current_block, ConditionBlock):
+            return
+
+        new_block = ConditionBlock(self.current_block.label)
+        new_block.instructions = self.current_block.instructions
+        new_block.predecessors = self.current_block.predecessors
+        new_block.taken = self.current_block.branch
+        new_block.next_block = self.current_block.next_block
+
+        for pred in self.current_block.predecessors:
+            if hasattr(pred, 'taken') and pred.taken == self.current_block:
+                pred.taken = new_block
+
+            if hasattr(pred, 'fall_through') and pred.fall_through == self.current_block:
+                pred.fall_through = new_block
+
+            if hasattr(pred, 'branch') and pred.branch == self.current_block:
+                pred.branch = new_block
+
+            if pred.next_block == self.current_block:
+                pred.next_block = new_block
+
+        for succ in [self.current_block.next_block, self.current_block.branch]:
+            if succ:
+                if self.current_block in succ.predecessors:
+                    succ.predecessors.remove(self.current_block)
+                    succ.predecessors.append(new_block)
 
     def new_temp(self) -> str:
         """
@@ -367,37 +395,34 @@ class CodeGenerator(NodeVisitor):
         # After, visit all the function definitions and emit the
         # code stored inside basic blocks.
 
-        # TODO: Correctly handle function definitions blocks
-        bb = EmitBlocks()
-        bb.visit(self.current_block)
-        self.code += bb.code
+        for _decl in node.gdecls:
+            if isinstance(_decl, FuncDef):
+                # _decl.cfg contains the Control Flow Graph for the function
+                # cfg points to start basic block
+                bb = EmitBlocks()
+                bb.visit(_decl.cfg)
+                for _code in bb.code:
+                    self.code.append(_code)
+
         self.debug_print_instructions(self.code)
 
-        # for _decl in node.gdecls:
-        #     if isinstance(_decl, FuncDef):
-        #         # _decl.cfg contains the Control Flow Graph for the function
-        #         # cfg points to start basic block
-        #         bb = EmitBlocks()
-        #         bb.visit(_decl.cfg)
-        #         for _code in bb.code:
-        #             self.code.append(_code)
-
-        # if self.viewcfg:  # evaluate to True if -cfg flag is present in command line
-        #     for _decl in node.gdecls:
-        #         if isinstance(_decl, FuncDef):
-        #             dot = CFG(_decl.decl.name.name)
-        #             # _decl.cfg contains the CFG for the function
-        #             dot.view(_decl.cfg)
+        if self.viewcfg:  # evaluate to True if -cfg flag is present in command line
+            for _decl in node.gdecls:
+                if isinstance(_decl, FuncDef):
+                    dot = CFG(_decl.decl.name.name)
+                    # _decl.cfg contains the CFG for the function
+                    dot.view(_decl.cfg)
 
     def visit_FuncDef(self, node: FuncDef):
         """
         Initialize the necessary blocks to construct the CFG of the function. Visit the function declaration. Visit all the declarations within the function. After allocating all declarations, visit the arguments initialization. Visit the body of the function to generate its code. Finally, setup the return block correctly and generate the return statement (even for void function).
         """
         self.push_scope()
-        # # Create the function block
-        # # Use the function name as label
-        # node.cfg = BasicBlock(node.decl.name.name)
-        # self.current_block = node.cfg
+
+        # Create the function block
+        # Use the function name as label
+        node.cfg = BasicBlock(node.decl.name.name)
+        self.current_block = node.cfg
         # self.current_temp = 0  # Set the temporary instruction index
 
         self.fname = node.decl.name.name
@@ -548,16 +573,20 @@ class CodeGenerator(NodeVisitor):
                 '%' + then_label, '%' + else_label)
         self.current_block.append(inst)
 
+        # Ensure that the current block is a conditional block
+        self.flip_current_block_to_conditional()
+
         prev_block = self.current_block
         then_block = BasicBlock(then_label)
-        else_block = BasicBlock(else_block)
+        else_block = BasicBlock(else_label)
         end_block = BasicBlock(end_label)
 
+        prev_block.next_block = then_block
         prev_block.taken = then_block
         prev_block.fall_through = else_block
         then_block.predecessors.append(prev_block)
         else_block.predecessors.append(prev_block)
-        then_block.next_block = end_block
+        then_block.next_block = else_block
         else_block.next_block = end_block
         end_block.predecessors += [then_block, else_block]
 
@@ -601,7 +630,23 @@ class CodeGenerator(NodeVisitor):
                      '%' + body_label, '%' + end_label)
         self.current_block.append(cond_inst)
 
+        # Ensure that the current block is a conditional block
+        self.flip_current_block_to_conditional()
+
+        prev_block = self.current_block
+        body_block = BasicBlock(body_label)
+        end_block = BasicBlock(end_label)
+
+        prev_block.next_block = body_block
+        prev_block.taken = body_block
+        prev_block.fall_through = end_block
+        body_block.predecessors.append(prev_block)
+        body_block.next_block = end_block
+        body_block.branch = prev_block
+        end_block.predecessors.append(prev_block)
+
         # Construct the for body
+        self.current_block = body_block
         self.current_block.append((f'{body_label}:',))
         self.visit(node.body)
 
@@ -611,6 +656,7 @@ class CodeGenerator(NodeVisitor):
         self.current_block.append(('jump', cond_label))
 
         # Construct the for end
+        self.current_block = end_block
         self.current_block.append((f'{end_label}:',))
         self.pop_scope()
 
@@ -633,12 +679,29 @@ class CodeGenerator(NodeVisitor):
                      '%' + body_label, '%' + end_label)
         self.current_block.append(cond_inst)
 
+        # Ensure that the current block is a conditional block
+        self.flip_current_block_to_conditional()
+
+        prev_block = self.current_block
+        body_block = BasicBlock(body_label)
+        end_block = BasicBlock(end_label)
+
+        prev_block.next_block = body_block
+        prev_block.taken = body_block
+        prev_block.fall_through = end_block
+        body_block.predecessors.append(prev_block)
+        body_block.next_block = end_block
+        body_block.branch = prev_block
+        end_block.predecessors.append(prev_block)
+
         # Construct the for body
+        self.current_block = body_block
         self.current_block.append((f'{body_label}:',))
         self.visit(node.body)
         self.current_block.append(('jump', cond_label))
 
         # Construct the for end
+        self.current_block = end_block
         self.current_block.append((f'{end_label}:',))
         self.pop_scope()
 
@@ -683,7 +746,8 @@ class CodeGenerator(NodeVisitor):
         """
         Generate a jump instruction to the current exit label.
         """
-        pass
+        self.current_block.append(('jump', 'exit'))
+        # TODO: Maybe start a new block after the break?
 
     def visit_ArrayRef(self, node: ArrayRef):
         """
@@ -812,7 +876,25 @@ class CodeGenerator(NodeVisitor):
         cbranch_inst = ("cbranch", egen, "%" + assert_true, "%" + assert_false)
         self.current_block.append(cbranch_inst)
 
+        # Ensure that the current block is a conditional block
+        self.flip_current_block_to_conditional()
+
+        prev_block = self.current_block
+        true_block = BasicBlock(assert_true)
+        false_block = BasicBlock(assert_false)
+
+        prev_block.next_block = false_block
+        prev_block.taken = true_block
+        prev_block.fall_through = false_block
+        true_block.predecessors.append(prev_block)
+        false_block.predecessors.append(prev_block)
+        false_block.next_block = true_block
+
+        # On assert false, the program should terminate
+        # false_block.branch = None
+
         # Create the assert False
+        self.current_block = false_block
         self.current_block.append((f'{assert_false}:',))
         str_to_print = self.new_text("str")
         coord = str(node.expr.coord).split(" ")[1]
@@ -824,6 +906,7 @@ class CodeGenerator(NodeVisitor):
         self.current_block.append(('jump', next_label))
 
         # Create the assert True
+        self.current_block = true_block
         self.current_block.append((f'{assert_true}:',))
         temp = self.new_temp()
         self.current_block.append(('literal_int', 0, temp))
