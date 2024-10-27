@@ -657,7 +657,6 @@ class CodeGenerator(NodeVisitor):
 
         # The following code work if node.lvalue is ID
         # TODO: check if have a better approach to the following code
-
         rgen = node.rvalue.gen_location
         lgen = node.lvalue.gen_location
         atype = node.lvalue.uc_type.typename
@@ -825,8 +824,6 @@ class CodeGenerator(NodeVisitor):
     def visit_EmptyStatement(self, node: Node):
         pass
 
-    i = 1 
-
     def visit_Read(self, node: Read):
         '''
         For each name, you need to visit it, load it if necessary and generate a read instruction for each element.
@@ -837,6 +834,7 @@ class CodeGenerator(NodeVisitor):
 
         for name in names:
             if not isinstance(name, ArrayRef):
+                name.parent = node
                 self.visit(name)
                 self.current_block.append(
                     (f'read_{name.uc_type.typename}', name.gen_location)
