@@ -402,7 +402,7 @@ class CodeGenerator(NodeVisitor):
 
         self.fname = node.decl.name.name
         self.return_temp = None
-        
+
         # Visit the function declaration
         self.visit(node.decl)
 
@@ -657,10 +657,10 @@ class CodeGenerator(NodeVisitor):
         """
         # Visit the assignmented value
         self.visit(node.rvalue)
-        
+
         if isinstance(node.lvalue, ArrayRef):
             node.lvalue.not_load = True
-        
+
         # Is not needed to visit the left side we already
         self.visit(node.lvalue)
 
@@ -759,10 +759,10 @@ class CodeGenerator(NodeVisitor):
             return
 
         node.gen_location = self.new_temp()
-        
+
         self.current_block.append(
             (f'load_{node.uc_type.typename}_*',
-            address_of_element, node.gen_location)
+             address_of_element, node.gen_location)
         )
 
     def visit_FuncCall(self, node: FuncCall):
@@ -837,7 +837,7 @@ class CodeGenerator(NodeVisitor):
         '''
         For each name, you need to visit it, load it if necessary and generate a read instruction for each element.
         '''
-        
+
         names = node.names[0]
         names = names.exprs if isinstance(names, ExprList) else [names]
 
@@ -897,9 +897,9 @@ class CodeGenerator(NodeVisitor):
 
     def visit_ID(self, node: ID):
         if hasattr(node, "parent") and \
-                (isinstance(node.parent, Decl) 
-                or isinstance(node.parent, Assignment) 
-                or isinstance(node.parent, Read)):
+                (isinstance(node.parent, Decl)
+                 or isinstance(node.parent, Assignment)
+                 or isinstance(node.parent, Read)):
             # Handle code generation for declarions on Decl node
             node.gen_location = node.scope.gen_location
         else:
