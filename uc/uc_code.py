@@ -739,10 +739,15 @@ class CodeGenerator(NodeVisitor):
              address_of_element)  # address of element at index
         )
 
+        if isinstance(node.parent, Read):
+            node.gen_location = address_of_element
+            return
+
         node.gen_location = self.new_temp()
+        
         self.current_block.append(
             (f'load_{node.uc_type.typename}_*',
-             address_of_element, node.gen_location)
+            address_of_element, node.gen_location)
         )
 
     def visit_FuncCall(self, node: FuncCall):
@@ -813,25 +818,28 @@ class CodeGenerator(NodeVisitor):
     def visit_EmptyStatement(self, node: Node):
         pass
 
+    i = 1 
+
     def visit_Read(self, node: Read):
-        node_ids = [n for n in node.names if isinstance(n, ID)] + \
-            [
-                n[1] for child in node.names
-                if not isinstance(child, ID)
-                for n in (child.children())
-                if isinstance(n[1], ID)
-        ]
+        '''
+        For each name, you need to visit it, load it if necessary and generate a read instruction for each element.
+        '''
+        
+        names = node.names[0]
+        names = names.exprs if isinstance(names, ExprList) else [names]
 
-        for id in node_ids:
-            var_gen_location = None
-            if self.is_global(id.name):
-                var_gen_location = f'@{id.name}'
+        for name in names:
+            name.parent = node
+            self.visit(name)
+            if not isinstance(name, ArrayRef):
+                self.current_block.append(
+                    (f'read_{name.uc_type.typename}', name.gen_location)
+                )
             else:
-                var_gen_location = f'%{id.name}'
-            self.current_block.append(
-                (f"read_{id.uc_type.typename}", var_gen_location)
-            )
-
+                self.current_block.append(
+                    (f'read_{name.uc_type.typename}_*', name.gen_location)
+                )
+        
     def visit_Return(self, node: Return):
         '''
         If there is an expression, you need to visit it, load it if necessary and store its value to the return location. Then generate a jump to the return block if needed. Do not forget to update the predecessor of the return block.
@@ -874,7 +882,9 @@ class CodeGenerator(NodeVisitor):
 
     def visit_ID(self, node: ID):
         if hasattr(node, "parent") and \
-                isinstance(node.parent, Decl) or isinstance(node.parent, Assignment):
+                (isinstance(node.parent, Decl) 
+                or isinstance(node.parent, Assignment) 
+                or isinstance(node.parent, Read)):
             # Handle code generation for declarions on Decl node
             node.gen_location = node.scope.gen_location
         else:
