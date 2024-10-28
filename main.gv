@@ -9,9 +9,16 @@ digraph g {
 	"for.body.1":f0 -> "if.then.1"
 	"for.body.1":f1 -> "if.else.1"
 	"if.then.1" [label="{if.then.1:\l	  jump label exit\l	  jump label if.end.1\l	}"]
-	"if.then.1" -> "if.end.1"
+	"if.then.1" -> exit
 	"if.else.1" [label="{if.else.1:\l	  %11 = literal int 1 \l	  %12 = load int %i \l	  %13 = add int %12 %11 \l	  store int %13 %i \l	}"]
 	"if.else.1" -> "if.end.1"
 	"if.end.1" [label="{if.end.1:\l	for.inc.1:\l	  %14 = literal int 1 \l	  %15 = load int %k \l	  %16 = add int %15 %14 \l	  store int %16 %k \l	  jump label for.cond.1\l	}"]
-	"for.end.1" [label="{for.end.1:\l	  %17 = load int %n \l	  %18 = load int %i \l	  %19 = eq int %18 %17 \l	  cbranch %19 label %assert.true.1 label %assert.false.1\l	}"]
+	"for.end.1" [label="{for.end.1:\l	  %17 = load int %n \l	  %18 = load int %i \l	  %19 = eq int %18 %17 \l	  cbranch %19 label %assert.true.1 label %assert.false.1\l	|{<f0>T|<f1>F}}"]
+	"for.end.1":f0 -> "assert.true.1"
+	"for.end.1":f1 -> "assert.false.1"
+	"assert.false.1" [label="{assert.false.1:\l	  print string @.str.0\l	  jump label exit\l	}"]
+	"assert.false.1" -> exit
+	"assert.true.1" [label="{assert.true.1:\l	  %20 = literal int 0 \l	  store int %20 %1 \l	  %21 = literal int 0 \l	  store int %21 %1 \l	  jump label exit\l	}"]
+	"assert.true.1" -> exit
+	exit [label="{exit:\l	  %22 = load int %1 \l	  return int %22\l	}"]
 }

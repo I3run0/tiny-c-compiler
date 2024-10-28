@@ -57,6 +57,7 @@ class CodeGenerator(NodeVisitor):
         self._enable_stdout_debug = debug_print
         self.viewcfg: bool = viewcfg
         self.current_block: Union[Block, None] = None
+        self.current_exit_block: Union[Block, None] = None
 
         # version dictionary for temporaries. We use the name as a Key
         self.fname: str = "_glob_"
@@ -314,6 +315,9 @@ class CodeGenerator(NodeVisitor):
                 init_list.value,
                 init_list.uc_type.typename)
 
+    def remove_if_present(self, list: List[any], item: any):
+        list.remove(item) if item in list else None
+
     def visit_VarDecl(self, node: VarDecl):
         """
         Allocate the variable (global or local) with the correct initial value (if there is any).
@@ -436,12 +440,21 @@ class CodeGenerator(NodeVisitor):
         self.fname = node.decl.name.name
         self.return_temp = None
 
+        exit_block = BasicBlock('exit')
+        self.current_exit_block = exit_block
+
         # Visit the function declaration
         self.visit(node.decl)
 
         # Visit the function body
         self.visit(node.body)
 
+        prev_block = self.current_block
+
+        prev_block.next_block = exit_block
+        prev_block.branch = exit_block
+
+        self.current_block = exit_block
         self.current_block.append(("exit:",))
 
         # For the void function is only necessary the exit to the
@@ -602,6 +615,11 @@ class CodeGenerator(NodeVisitor):
         end_block.predecessors += [then_block, else_block]
         end_block.next_block = prev_block_next_block
 
+        if prev_block_next_block:
+            prev_block_next_block.predecessors.append(end_block)
+            self.remove_if_present(
+                prev_block_next_block.predecessors, prev_block)
+
         # Create the if true instruction
         self.current_block = then_block
         self.current_block.append((f'{then_label}:',))
@@ -651,6 +669,11 @@ class CodeGenerator(NodeVisitor):
         body_block.branch = cond_block
         end_block.predecessors.append(cond_block)
         end_block.next_block = prev_block_next_block
+
+        if prev_block_next_block:
+            prev_block_next_block.predecessors.append(end_block)
+            self.remove_if_present(
+                prev_block_next_block.predecessors, prev_block)
 
         # Construct the for codition
         self.current_block = cond_block
@@ -712,6 +735,11 @@ class CodeGenerator(NodeVisitor):
         end_block.predecessors.append(prev_block)
         end_block.next_block = prev_block_next_block
 
+        if prev_block_next_block:
+            prev_block_next_block.predecessors.append(end_block)
+            self.remove_if_present(
+                prev_block_next_block.predecessors, prev_block)
+
         # Construct the for body
         self.current_block = body_block
         self.current_block.append((f'{body_label}:',))
@@ -765,6 +793,7 @@ class CodeGenerator(NodeVisitor):
         Generate a jump instruction to the current exit label.
         """
         self.current_block.append(('jump', 'exit'))
+        self.current_block.branch = self.current_exit_block
         # TODO: Maybe start a new block after the break?
 
     def visit_ArrayRef(self, node: ArrayRef):
@@ -905,10 +934,17 @@ class CodeGenerator(NodeVisitor):
         prev_block.next_block = false_block
         prev_block.taken = true_block
         prev_block.fall_through = false_block
+
+        false_block.branch = self.current_exit_block
         false_block.predecessors.append(prev_block)
         false_block.next_block = true_block
         true_block.predecessors.append(prev_block)
         true_block.next_block = prev_block_next_block
+
+        if prev_block_next_block:
+            prev_block_next_block.predecessors.append(true_block)
+            self.remove_if_present(
+                prev_block_next_block.predecessors, prev_block)
 
         # On assert false, the program should terminate
         # false_block.branch = None
