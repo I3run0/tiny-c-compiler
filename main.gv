@@ -1,3 +1,17 @@
 digraph g {
 	node [shape=record]
+	main [label="{main:\l	entry:\l	  %1 = alloc int \l	  %i = alloc int \l	  %2 = literal int 3 \l	  store int %2 %i \l	  %n = alloc int \l	  %3 = literal int 6 \l	  store int %3 %n \l	  %k = alloc int \l	  %4 = literal int 1 \l	  store int %4 %k \l	}"]
+	main -> "for.cond.1"
+	"for.cond.1" [label="{for.cond.1:\l	  %5 = load int %n \l	  %6 = load int %k \l	  %7 = lt int %6 %5 \l	  cbranch %7 label %for.body.1 label %for.end.1\l	|{<f0>T|<f1>F}}"]
+	"for.cond.1":f0 -> "for.body.1"
+	"for.cond.1":f1 -> "for.end.1"
+	"for.body.1" [label="{for.body.1:\l	  %8 = load int %n \l	  %9 = load int %i \l	  %10 = ge int %9 %8 \l	  cbranch %10 label %if.then.1 label %if.else.1\l	|{<f0>T|<f1>F}}"]
+	"for.body.1":f0 -> "if.then.1"
+	"for.body.1":f1 -> "if.else.1"
+	"if.then.1" [label="{if.then.1:\l	  jump label exit\l	  jump label if.end.1\l	}"]
+	"if.then.1" -> "if.end.1"
+	"if.else.1" [label="{if.else.1:\l	  %11 = literal int 1 \l	  %12 = load int %i \l	  %13 = add int %12 %11 \l	  store int %13 %i \l	}"]
+	"if.else.1" -> "if.end.1"
+	"if.end.1" [label="{if.end.1:\l	for.inc.1:\l	  %14 = literal int 1 \l	  %15 = load int %k \l	  %16 = add int %15 %14 \l	  store int %16 %k \l	  jump label for.cond.1\l	}"]
+	"for.end.1" [label="{for.end.1:\l	  %17 = load int %n \l	  %18 = load int %i \l	  %19 = eq int %18 %17 \l	  cbranch %19 label %assert.true.1 label %assert.false.1\l	}"]
 }

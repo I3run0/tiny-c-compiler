@@ -121,6 +121,11 @@ class CodeGenerator(NodeVisitor):
         new_block.taken = self.current_block.branch
         new_block.next_block = self.current_block.next_block
 
+        if hasattr(self.current_block, 'node_that_is_cfg_root') and \
+                self.current_block.node_that_is_cfg_root:
+            node = self.current_block.node_that_is_cfg_root
+            node.cfg = new_block
+
         for pred in self.current_block.predecessors:
             if hasattr(pred, 'taken') and pred.taken == self.current_block:
                 pred.taken = new_block
@@ -139,6 +144,8 @@ class CodeGenerator(NodeVisitor):
                 if self.current_block in succ.predecessors:
                     succ.predecessors.remove(self.current_block)
                     succ.predecessors.append(new_block)
+
+        self.current_block = new_block
 
     def new_temp(self) -> str:
         """
@@ -422,6 +429,7 @@ class CodeGenerator(NodeVisitor):
         # Create the function block
         # Use the function name as label
         node.cfg = BasicBlock(node.decl.name.name)
+        node.cfg.node_that_is_cfg_root = node
         self.current_block = node.cfg
         # self.current_temp = 0  # Set the temporary instruction index
 
@@ -577,6 +585,7 @@ class CodeGenerator(NodeVisitor):
         self.flip_current_block_to_conditional()
 
         prev_block = self.current_block
+        prev_block_next_block = prev_block.next_block
         then_block = BasicBlock(then_label)
         else_block = BasicBlock(else_label)
         end_block = BasicBlock(end_label)
@@ -587,8 +596,11 @@ class CodeGenerator(NodeVisitor):
         then_block.predecessors.append(prev_block)
         else_block.predecessors.append(prev_block)
         then_block.next_block = else_block
+        then_block.branch = end_block
         else_block.next_block = end_block
+        else_block.branch = end_block
         end_block.predecessors += [then_block, else_block]
+        end_block.next_block = prev_block_next_block
 
         # Create the if true instruction
         self.current_block = then_block
@@ -622,28 +634,32 @@ class CodeGenerator(NodeVisitor):
         inc_label = self.new_temp_label("for.inc")
         end_label = self.new_temp_label("for.end")
 
+        prev_block = self.current_block
+        prev_block_next_block = prev_block.next_block
+        cond_block = ConditionBlock(cond_label)
+        body_block = BasicBlock(body_label)
+        end_block = BasicBlock(end_label)
+
+        prev_block.next_block = cond_block
+        prev_block.branch = cond_block
+
+        cond_block.next_block = body_block
+        cond_block.taken = body_block
+        cond_block.fall_through = end_block
+        body_block.predecessors.append(cond_block)
+        body_block.next_block = end_block
+        body_block.branch = cond_block
+        end_block.predecessors.append(cond_block)
+        end_block.next_block = prev_block_next_block
+
         # Construct the for codition
+        self.current_block = cond_block
         self.current_block.append((f'{cond_label}:',))
 
         self.visit(node.cond)
         cond_inst = ("cbranch", node.cond.gen_location,
                      '%' + body_label, '%' + end_label)
         self.current_block.append(cond_inst)
-
-        # Ensure that the current block is a conditional block
-        self.flip_current_block_to_conditional()
-
-        prev_block = self.current_block
-        body_block = BasicBlock(body_label)
-        end_block = BasicBlock(end_label)
-
-        prev_block.next_block = body_block
-        prev_block.taken = body_block
-        prev_block.fall_through = end_block
-        body_block.predecessors.append(prev_block)
-        body_block.next_block = end_block
-        body_block.branch = prev_block
-        end_block.predecessors.append(prev_block)
 
         # Construct the for body
         self.current_block = body_block
@@ -683,6 +699,7 @@ class CodeGenerator(NodeVisitor):
         self.flip_current_block_to_conditional()
 
         prev_block = self.current_block
+        prev_block_next_block = prev_block.next_block
         body_block = BasicBlock(body_label)
         end_block = BasicBlock(end_label)
 
@@ -693,6 +710,7 @@ class CodeGenerator(NodeVisitor):
         body_block.next_block = end_block
         body_block.branch = prev_block
         end_block.predecessors.append(prev_block)
+        end_block.next_block = prev_block_next_block
 
         # Construct the for body
         self.current_block = body_block
@@ -880,15 +898,17 @@ class CodeGenerator(NodeVisitor):
         self.flip_current_block_to_conditional()
 
         prev_block = self.current_block
-        true_block = BasicBlock(assert_true)
+        prev_block_next_block = prev_block.next_block
         false_block = BasicBlock(assert_false)
+        true_block = BasicBlock(assert_true)
 
         prev_block.next_block = false_block
         prev_block.taken = true_block
         prev_block.fall_through = false_block
-        true_block.predecessors.append(prev_block)
         false_block.predecessors.append(prev_block)
         false_block.next_block = true_block
+        true_block.predecessors.append(prev_block)
+        true_block.next_block = prev_block_next_block
 
         # On assert false, the program should terminate
         # false_block.branch = None
