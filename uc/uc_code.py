@@ -667,7 +667,7 @@ class CodeGenerator(NodeVisitor):
         body_block.predecessors.append(cond_block)
         body_block.next_block = end_block
         body_block.branch = cond_block
-        end_block.predecessors.append(cond_block)
+        end_block.predecessors += [cond_block, body_block]
         end_block.next_block = prev_block_next_block
 
         if prev_block_next_block:
@@ -942,6 +942,7 @@ class CodeGenerator(NodeVisitor):
         true_block.next_block = prev_block_next_block
 
         if prev_block_next_block:
+            prev_block_next_block.predecessors.append(false_block)
             prev_block_next_block.predecessors.append(true_block)
             self.remove_if_present(
                 prev_block_next_block.predecessors, prev_block)
