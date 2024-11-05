@@ -607,7 +607,7 @@ class CodeGenerator(NodeVisitor):
         prev_block.taken = then_block
         prev_block.fall_through = else_block
         then_block.predecessors.append(prev_block)
-        else_block.predecessors.append(prev_block)
+        else_block.predecessors += [prev_block, then_block]
         then_block.next_block = else_block
         then_block.branch = end_block
         else_block.next_block = end_block
@@ -732,7 +732,7 @@ class CodeGenerator(NodeVisitor):
         body_block.predecessors.append(prev_block)
         body_block.next_block = end_block
         body_block.branch = prev_block
-        end_block.predecessors.append(prev_block)
+        end_block.predecessors += [prev_block, body_block]
         end_block.next_block = prev_block_next_block
 
         if prev_block_next_block:
@@ -938,7 +938,7 @@ class CodeGenerator(NodeVisitor):
         false_block.branch = self.current_exit_block
         false_block.predecessors.append(prev_block)
         false_block.next_block = true_block
-        true_block.predecessors.append(prev_block)
+        true_block.predecessors += [prev_block, false_block]
         true_block.next_block = prev_block_next_block
 
         if prev_block_next_block:
